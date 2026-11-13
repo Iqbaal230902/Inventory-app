@@ -1,0 +1,17 @@
+# Dependencies & build
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Secrets — use .env.example as the template
+.env
+.env.test
+.env.*.local
+
+# Uploaded files (transaction photos)
+uploads/
+
+# Logs & OS
+*.log
+.DS_Store
