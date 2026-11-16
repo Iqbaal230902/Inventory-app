@@ -1,0 +1,20 @@
+<div class="top"><h1>Manajemen User</h1><a class="btn" href="{{base}}/users/new">+ Tambah User</a></div>
+<div class="card">
+  <div class="tbl-wrap"><table>
+    <tr><th>Nama</th><th>Username</th><th>Role</th><th>Lokasi</th><th>Login terakhir</th><th>Status</th><th></th></tr>
+    {{#each users}}
+    <tr class="{{#unless isActive}}dim{{/unless}}">
+      <td>{{name}}{{#if email}}<br><small class="muted">{{email}}</small>{{/if}}</td>
+      <td>{{username}}</td>
+      <td>{{roleLabel role}}</td>
+      <td>{{#if (eq role "owner")}}Semua lokasi{{else}}{{locationNames}}{{/if}}</td>
+      <td>{{lastLogin}}</td>
+      <td>{{#if isActive}}<span class="badge ok">Aktif</span>{{else}}<span class="badge muted">Nonaktif</span>{{/if}}{{#if locked}} <span class="badge critical">Terkunci</span>{{/if}}</td>
+      <td style="text-align:right;white-space:nowrap">
+        {{#if locked}}<form method="post" action="{{../base}}/users/{{id}}/unlock" style="display:inline"><button class="btn ghost sm" type="submit">Buka kunci</button></form>{{/if}}
+        <a class="btn ghost sm" href="{{../base}}/users/{{id}}">Ubah</a>
+      </td>
+    </tr>
+    {{/each}}
+  </table></div>
+</div>

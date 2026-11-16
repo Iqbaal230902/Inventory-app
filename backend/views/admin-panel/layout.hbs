@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>{{title}} · Admin {{company}}</title>
+<link rel="icon" href="{{base}}/logo.png">
+<style>
+:root{
+  --primary:#2563EB;--primary-dark:#1D4ED8;--primary-soft:#E0E8FD;
+  --ok:#16A34A;--ok-soft:#DCFCE7;--warn:#B45309;--warn-soft:#FEF3C7;
+  --bad:#DC2626;--bad-soft:#FEE2E2;
+  --ink:#0F172A;--muted:#64748B;--line:#E2E8F0;--bg:#F1F4FB;--card:#FFFFFF;
+  --side:#0F172A;--side-ink:#CBD5E1;
+  --r:12px;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg)}
+a{color:var(--primary);text-decoration:none}
+a:hover{text-decoration:underline}
+.shell{display:flex;min-height:100vh;background:linear-gradient(to right,var(--side) 236px,var(--bg) 236px)}
+.side{width:236px;flex:none;background:var(--side);color:var(--side-ink);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.brand{display:flex;gap:10px;align-items:center;padding:18px 16px;border-bottom:1px solid #1E293B}
+.brand img{width:38px;height:38px;border-radius:50%;background:#fff;object-fit:contain}
+.brand b{display:block;color:#fff;font-size:13px;line-height:1.25}
+.brand small{color:#94A3B8;font-size:11px}
+.nav{padding:10px 8px;flex:1;overflow:auto}
+.nav a{display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:8px;color:var(--side-ink);font-weight:500}
+.nav a:hover{background:#1E293B;text-decoration:none;color:#fff}
+.nav a.on{background:var(--primary);color:#fff}
+.nav .sec{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#64748B;padding:14px 12px 4px}
+.nav svg{width:18px;height:18px;flex:none}
+.me{padding:12px 16px;border-top:1px solid #1E293B;font-size:12px}
+.me b{color:#fff;display:block}
+.me form{margin-top:8px}
+.me button{width:100%;background:#1E293B;color:#fff;border:0;border-radius:8px;padding:8px;cursor:pointer;font:inherit}
+.me button:hover{background:#334155}
+main{flex:1;min-width:0;padding:24px 28px 40px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+h1{font-size:22px;margin:0}
+h2{font-size:16px;margin:0 0 12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:18px}
+.grid{display:grid;gap:14px}
+.g4{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.stat small{color:var(--muted);display:block}
+.stat b{font-size:24px;display:block;margin-top:2px;font-variant-numeric:tabular-nums}
+.stat.alert{border-color:#FCA5A5;background:var(--bad-soft)}
+.tbl-wrap{overflow-x:auto;margin:0 -18px;padding:0 18px}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap;background:#F8FAFC}
+tr:last-child td{border-bottom:0}
+td.nw{white-space:nowrap}
+td.prod{min-width:190px}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.dim td{color:var(--muted)}
+tfoot td{font-weight:700;background:#F8FAFC}
+.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;background:var(--primary-soft);color:var(--primary-dark)}
+.badge.ok{background:var(--ok-soft);color:var(--ok)}
+.badge.warning,.badge.pending_approval{background:var(--warn-soft);color:var(--warn)}
+.badge.critical,.badge.void{background:var(--bad-soft);color:var(--bad)}
+.badge.posted{background:var(--ok-soft);color:var(--ok)}
+.badge.muted{background:#F1F5F9;color:var(--muted)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:1px solid var(--primary);background:var(--primary);color:#fff;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--primary-dark);text-decoration:none}
+.btn.ghost{background:#fff;color:var(--primary)}
+.btn.ghost:hover{background:var(--primary-soft)}
+.btn.danger{background:var(--bad);border-color:var(--bad)}
+.btn.ok{background:var(--ok);border-color:var(--ok)}
+.btn.sm{padding:4px 10px;font-size:13px}
+.flash{padding:12px 14px;border-radius:10px;margin-bottom:16px;font-weight:500}
+.flash.ok{background:var(--ok-soft);color:#14532D;border:1px solid #86EFAC}
+.flash.error{background:var(--bad-soft);color:#7F1D1D;border:1px solid #FCA5A5}
+form.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+form.filters label{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:3px}
+input,select,textarea{font:inherit;color:var(--ink);padding:8px 10px;border:1px solid #CBD5E1;border-radius:8px;background:#fff;min-width:0}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--primary-soft);border-color:var(--primary)}
+input[readonly]{background:#F1F5F9;color:var(--muted)}
+.form{max-width:620px}
+.form .f{display:flex;flex-direction:column;gap:4px;margin-bottom:14px}
+.form .f > span{font-weight:600}
+.form .f small{color:var(--muted)}
+.form .chk{flex-direction:row;align-items:center;gap:8px}
+.form .chk input{width:18px;height:18px}
+.form textarea{min-height:70px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.muted{color:var(--muted)}
+.kv{display:grid;grid-template-columns:160px 1fr;gap:6px 14px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;font-weight:500}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.tabs a{padding:7px 12px;border-radius:99px;background:#fff;border:1px solid var(--line);color:var(--ink);font-weight:500}
+.tabs a.on{background:var(--primary);border-color:var(--primary);color:#fff}
+.tabs a:hover{text-decoration:none;border-color:var(--primary)}
+.pager{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+pre{margin:0;font-size:12px;white-space:pre-wrap;word-break:break-word;max-height:220px;overflow:auto;background:#F8FAFC;border-radius:8px;padding:8px}
+details summary{cursor:pointer;color:var(--primary)}
+.empty{padding:24px;text-align:center;color:var(--muted)}
+.menu-btn{display:none}
+@media (max-width:900px){
+  .shell{background:var(--bg)}
+  .side{position:fixed;left:-260px;z-index:20;transition:left .2s;width:250px}
+  .side.open{left:0;box-shadow:0 0 0 100vmax rgba(15,23,42,.45)}
+  .menu-btn{display:inline-flex;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font:inherit;cursor:pointer}
+  main{padding:16px}
+  .kv{grid-template-columns:1fr}
+  .kv dt{margin-top:6px}
+}
+@media print{.side,.menu-btn,.no-print{display:none!important}main{padding:0}.card{border:0}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="side" id="side">
+    <div class="brand">
+      <img src="{{base}}/logo.png" alt="">
+      <div><b>{{company}}</b><small>Admin Panel</small></div>
+    </div>
+    {{#if me}}
+    <nav class="nav">
+      <a href="{{base}}" class="{{#if nav.dashboard}}on{{/if}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>Dashboard</a>
+      <a href="{{base}}/trx" class="{{#if nav.trx}}on{{/if}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h13l-3-3M21 17H8l3 3"/></svg>Transaksi</a>
+      <a href="{{base}}/reports" class="{{#if nav.reports}}on{{/if}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Laporan</a>
+      <div class="sec">Data</div>
+      <a href="{{base}}/master" class="{{#if nav.master}}on{{/if}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>Data Master</a>
+      <a href="{{base}}/min-levels" class="{{#if nav.minLevels}}on{{/if}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>Stok Minimum</a>
+      <div class="sec">Sistem</div>
+      {{#if isOwner}}<a href="{{base}}/users" class="{{#if nav.users}}on{{/if}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M17 11a3 3 0 1 0 0-6M22 21c0-3-2-5-5-5.5"/></svg>Manajemen User</a>{{/if}}
+      <a href="{{base}}/audit" class="{{#if nav.audit}}on{{/if}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>Jejak Audit</a>
+      <a href="{{base}}/settings" class="{{#if nav.settings}}on{{/if}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>Pengaturan</a>
+    </nav>
+    <div class="me">
+      <b>{{me.name}}</b>{{roleLabel me.role}} · {{me.username}}
+      <form method="post" action="{{base}}/logout"><button type="submit">Keluar</button></form>
+    </div>
+    {{/if}}
+  </aside>
+  <main>
+    <button class="menu-btn no-print" type="button" onclick="document.getElementById('side').classList.toggle('open')">☰ Menu</button>
+    {{#if flash}}<div class="flash {{flash.type}}">{{flash.message}}</div>{{/if}}
+    {{{body}}}
+  </main>
+</div>
+<script>
+document.addEventListener('click',function(e){var s=document.getElementById('side');if(s.classList.contains('open')&&!s.contains(e.target)&&!e.target.closest('.menu-btn'))s.classList.remove('open')});
+document.querySelectorAll('form[data-confirm]').forEach(function(f){f.addEventListener('submit',function(e){if(!confirm(f.dataset.confirm))e.preventDefault()})});
+</script>
+</body>
+</html>

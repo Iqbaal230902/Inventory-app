@@ -1,0 +1,71 @@
+<div class="top">
+  <div>
+    <a href="{{base}}/trx" class="no-print">← Transaksi</a>
+    <h1>{{#if t.doc_no}}{{t.doc_no}}{{else}}Transaksi #{{t.id}}{{/if}}</h1>
+    <span class="badge {{t.status}}">{{statusLabel t.status}}</span>
+    {{#if t.void_requested}}<span class="badge warning">Ada ajuan void</span>{{/if}}
+    {{#if t.is_locked}}<span class="badge muted">Terkunci (H+1)</span>{{/if}}
+    {{#if (gt0 t.print_count)}}<span class="badge muted">Dicetak {{t.print_count}}×</span>{{/if}}
+  </div>
+  <div class="actions no-print">
+    {{#if isOutSale}}{{#if (ne t.status "void")}}<a class="btn" href="{{base}}/trx/{{t.id}}/pdf" target="_blank">📄 Surat Jalan PDF</a>{{/if}}{{/if}}
+    {{#if t.has_photo}}<a class="btn ghost" href="{{base}}/trx/{{t.id}}/photo" target="_blank">🖼 Foto</a>{{/if}}
+  </div>
+</div>
+
+<div class="grid g2">
+  <div class="card">
+    <h2>Rincian</h2>
+    <dl class="kv">
+      <dt>Jenis</dt><dd>{{trxTypeLabel t.trx_type}}</dd>
+      <dt>Tanggal</dt><dd>{{dt t.trx_at tz}}</dd>
+      <dt>Lokasi</dt><dd>{{t.location.name}}{{#if t.dest_location}} → {{t.dest_location.name}}{{/if}}</dd>
+      {{#if t.manual_doc_no}}<dt>No. manual</dt><dd>{{t.manual_doc_no}}</dd>{{/if}}
+      {{#if t.partner_name}}<dt>Pelanggan / Supplier</dt><dd>{{t.partner_name}}{{#if t.partner_phone}} · {{t.partner_phone}}{{/if}}</dd>{{/if}}
+      {{#if t.plate_number}}<dt>No. Polisi</dt><dd>{{t.plate_number}}</dd>{{/if}}
+      {{#if t.driver_name}}<dt>Sopir</dt><dd>{{t.driver_name}}</dd>{{/if}}
+      {{#if t.gross_ton}}<dt>Bruto / Tara / Netto</dt><dd>{{ton t.gross_ton}} / {{ton t.tare_ton}} / <b>{{ton t.net_ton}}</b> Ton</dd>{{/if}}
+      {{#if t.notes}}<dt>Catatan</dt><dd>{{t.notes}}</dd>{{/if}}
+      <dt>Dibuat oleh</dt><dd>{{t.created_by.name}} · {{dt t.created_at tz}}</dd>
+      {{#if t.device_id}}<dt>Perangkat</dt><dd><code>{{t.device_id}}</code></dd>{{/if}}
+      {{#if t.review_note}}<dt>Catatan review</dt><dd>{{t.review_note}}</dd>{{/if}}
+      {{#if t.void_reason}}<dt>Alasan void</dt><dd>{{t.void_reason}}{{#if t.voided_by}} (oleh {{t.voided_by.name}}){{/if}}</dd>{{/if}}
+      {{#if t.void_request_reason}}<dt>Alasan ajuan void</dt><dd>{{t.void_request_reason}}</dd>{{/if}}
+      {{#if t.ref_transaction}}<dt>Referensi</dt><dd><a href="{{base}}/trx/{{t.ref_transaction.id}}">{{t.ref_transaction.doc_no}}</a></dd>{{/if}}
+      {{#if t.void_transaction}}<dt>Dokumen void</dt><dd><a href="{{base}}/trx/{{t.void_transaction.id}}">{{t.void_transaction.doc_no}}</a></dd>{{/if}}
+    </dl>
+  </div>
+  <div class="card">
+    <h2>Barang</h2>
+    <div class="tbl-wrap"><table>
+      <tr><th>Produk</th><th>Arah</th><th>Kemasan</th><th class="n">Ton</th></tr>
+      {{#each t.items}}<tr><td>{{product_name}}</td><td>{{#if (eq direction "in")}}Masuk{{else}}Keluar{{/if}}</td><td>{{#if package_qty}}{{package_qty}} × {{packaging_name}}{{else}}{{packaging_name}}{{/if}}</td><td class="n">{{ton qty_ton}}</td></tr>{{/each}}
+      <tfoot><tr><td colspan="3">Total</td><td class="n">{{ton t.total_ton}}</td></tr></tfoot>
+    </table></div>
+
+    {{#if p.can_approve}}
+    <form class="no-print" method="post" action="{{base}}/trx/{{t.id}}/approve" style="margin-top:18px" data-confirm="Setujui transaksi ini?">
+      <h2>Setujui transaksi</h2>
+      <p class="muted" style="margin-top:-6px">Transaksi ini masuk saat stok server kurang (input offline). Periksa lalu setujui.</p>
+      <div class="actions"><input name="note" placeholder="Catatan (opsional)" maxlength="255" style="flex:1"><button class="btn ok" type="submit">✔ Setujui</button></div>
+    </form>
+    {{/if}}
+    {{#if (or p.can_void p.can_request_void)}}
+    <form class="no-print" method="post" action="{{base}}/trx/{{t.id}}/void" style="margin-top:18px" data-confirm="{{#if p.can_void}}Batalkan (VOID) transaksi ini? Stok akan dikembalikan dengan mutasi pembalik.{{else}}Kirim ajuan void ke Owner?{{/if}}">
+      <h2>{{#if p.can_void}}Batalkan (VOID){{else}}Ajukan void{{/if}}</h2>
+      <div class="actions"><input name="reason" required placeholder="Alasan (wajib)" maxlength="255" style="flex:1"><button class="btn danger" type="submit">{{#if p.can_void}}VOID{{else}}Ajukan{{/if}}</button></div>
+    </form>
+    {{/if}}
+  </div>
+</div>
+
+<div class="card">
+  <h2>Jejak audit</h2>
+  <div class="tbl-wrap"><table>
+    <tr><th>Waktu</th><th>Aksi</th><th>Oleh</th><th>Perangkat</th><th>Perubahan</th></tr>
+    {{#each t.history}}
+    <tr><td style="white-space:nowrap">{{dt created_at ../tz}}</td><td>{{actionLabel action}}</td><td>{{user_name}}</td><td><small class="muted">{{device_id}}</small></td>
+      <td>{{#if (or old_values new_values)}}<details><summary>Lihat</summary>{{#if old_values}}<small class="muted">Sebelum</small><pre>{{json old_values}}</pre>{{/if}}{{#if new_values}}<small class="muted">Sesudah</small><pre>{{json new_values}}</pre>{{/if}}</details>{{/if}}</td></tr>
+    {{/each}}
+  </table></div>
+</div>

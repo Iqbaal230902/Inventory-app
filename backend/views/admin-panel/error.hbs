@@ -1,0 +1,5 @@
+<div class="card" style="max-width:560px">
+  <h1 style="margin-bottom:8px">{{#if (eq status 404)}}Tidak ditemukan{{else if (eq status 403)}}Akses ditolak{{else}}Terjadi kesalahan{{/if}}</h1>
+  <p>{{message}}</p>
+  <div class="actions"><a class="btn ghost" href="javascript:history.back()">← Kembali</a><a class="btn" href="{{base}}">Ke Dashboard</a></div>
+</div>

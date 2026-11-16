@@ -1,0 +1,30 @@
+<div class="top"><h1>Pengaturan</h1></div>
+<div class="grid g2">
+  <div class="card">
+    <h2>Profil perusahaan &amp; aturan</h2>
+    <form class="form" method="post" action="{{base}}/settings">
+      {{#each fields}}
+      <label class="f"><span>{{label}}{{#if required}} *{{/if}}</span>
+        {{#if (eq type "textarea")}}<textarea name="{{name}}" maxlength="255">{{value}}</textarea>{{else}}<input name="{{name}}" value="{{value}}" {{#if required}}required{{/if}}>{{/if}}
+        {{#if help}}<small>{{help}}</small>{{/if}}
+      </label>
+      {{/each}}
+      <div class="actions"><button class="btn" type="submit">Simpan</button></div>
+    </form>
+  </div>
+  <div class="card">
+    <h2>Logo di surat jalan</h2>
+    <p class="muted" style="margin-top:-6px">Dipakai di kop surat jalan (PDF &amp; printer thermal). Bila kosong, memakai logo PT bawaan.</p>
+    <img src="{{#if logo}}{{logo}}{{else}}{{base}}/logo.png{{/if}}" alt="Logo" style="width:120px;height:120px;object-fit:contain;border:1px solid var(--line);border-radius:12px;background:#fff;margin-bottom:12px">
+    <form method="post" action="{{base}}/settings/logo" enctype="multipart/form-data" class="actions">
+      <input type="file" name="logo" accept="image/png,image/jpeg" required>
+      <button class="btn" type="submit">Unggah</button>
+    </form>
+    <small class="muted">PNG/JPG, maksimal 300 KB, sebaiknya persegi.</small>
+    {{#if logo}}
+    <form method="post" action="{{base}}/settings/logo" style="margin-top:12px" data-confirm="Hapus logo unggahan dan kembali ke logo bawaan?">
+      <input type="hidden" name="remove" value="1"><button class="btn ghost sm" type="submit">Pakai logo bawaan</button>
+    </form>
+    {{/if}}
+  </div>
+</div>

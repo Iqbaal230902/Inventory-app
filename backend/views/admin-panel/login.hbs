@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Masuk · Admin {{company}}</title>
+<link rel="icon" href="{{base}}/logo.png">
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;padding:16px;font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#0F172A;background:linear-gradient(160deg,#1D4ED8 0%,#2563EB 45%,#E9ECFA 45.1%)}
+.box{width:100%;max-width:380px;background:#fff;border-radius:16px;padding:28px 26px;box-shadow:0 20px 50px rgba(15,23,42,.18)}
+.logo{width:84px;height:84px;border-radius:50%;display:block;margin:0 auto 10px;background:#fff;object-fit:contain;box-shadow:0 2px 10px rgba(15,23,42,.12)}
+h1{font-size:19px;text-align:center;margin:4px 0 2px}
+p.sub{text-align:center;color:#64748B;margin:0 0 20px}
+label{display:block;font-weight:600;margin:12px 0 4px}
+input{width:100%;font:inherit;padding:10px 12px;border:1px solid #CBD5E1;border-radius:9px}
+input:focus{outline:2px solid #E0E8FD;border-color:#2563EB}
+button{width:100%;margin-top:20px;padding:11px;border:0;border-radius:9px;background:#2563EB;color:#fff;font:inherit;font-weight:700;cursor:pointer}
+button:hover{background:#1D4ED8}
+.flash{padding:10px 12px;border-radius:9px;margin-bottom:6px;font-weight:500}
+.flash.error{background:#FEE2E2;color:#7F1D1D}
+.flash.ok{background:#DCFCE7;color:#14532D}
+.foot{text-align:center;color:#94A3B8;font-size:12px;margin-top:18px}
+</style>
+</head>
+<body>
+<form class="box" method="post" action="{{base}}/login">
+  <img class="logo" src="{{base}}/logo.png" alt="">
+  <h1>{{company}}</h1>
+  <p class="sub">Admin Panel · Manajemen Stok Pasir Silika</p>
+  {{#if flash}}<div class="flash {{flash.type}}">{{flash.message}}</div>{{/if}}
+  <input type="hidden" name="next" value="{{next}}">
+  <label for="u">Username</label>
+  <input id="u" name="username" autocomplete="username" required autofocus>
+  <label for="p">Password</label>
+  <input id="p" name="password" type="password" autocomplete="current-password" required>
+  <button type="submit">Masuk</button>
+  <div class="foot">Khusus Owner &amp; Admin</div>
+</form>
+</body>
+</html>

@@ -1,0 +1,17 @@
+<div class="top">
+  <h1>Data Master</h1>
+  {{#if s.canCreate}}<a class="btn" href="{{base}}/master/{{s.key}}/new">+ Tambah {{s.singular}}</a>{{/if}}
+</div>
+<div class="tabs">{{#each tabs}}<a href="{{../base}}/master/{{key}}" class="{{#if active}}on{{/if}}">{{title}}</a>{{/each}}</div>
+<div class="card">
+  <h2>{{s.title}}</h2>
+  {{#if s.note}}<p class="muted" style="margin-top:-6px">{{s.note}}</p>{{/if}}
+  {{#if rows.length}}
+  <div class="tbl-wrap"><table>
+    <tr>{{#each s.columns}}<th>{{this}}</th>{{/each}}<th></th></tr>
+    {{#each rows}}
+    <tr class="{{#if inactive}}dim{{/if}}">{{#each cells}}<td>{{this}}</td>{{/each}}<td style="text-align:right"><a class="btn ghost sm" href="{{../base}}/master/{{../s.key}}/{{id}}">Ubah</a></td></tr>
+    {{/each}}
+  </table></div>
+  {{else}}<div class="empty">Belum ada data.</div>{{/if}}
+</div>

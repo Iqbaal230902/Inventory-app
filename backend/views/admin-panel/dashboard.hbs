@@ -1,0 +1,67 @@
+<div class="top">
+  <h1>Dashboard Stok</h1>
+  <form class="filters no-print" method="get">
+    {{#if (ne locations.length 1)}}
+    <select name="location_id" onchange="this.form.submit()">
+      <option value="">Semua lokasi</option>
+      {{#each locations}}<option value="{{id}}" {{sel id ../locationId}}>{{name}}</option>{{/each}}
+    </select>
+    {{/if}}
+    <span class="muted">Data per {{updatedAt}} WIB</span>
+  </form>
+</div>
+
+<div class="grid g4" style="margin-bottom:18px">
+  <div class="stat"><small>Total stok</small><b>{{ton d.total_ton}} <small style="display:inline">Ton</small></b></div>
+  <div class="stat"><small>Masuk hari ini</small><b>{{ton d.today.in_ton}}</b></div>
+  <div class="stat"><small>Keluar hari ini</small><b>{{ton d.today.out_ton}}</b></div>
+  <div class="stat"><small>Truk keluar/masuk hari ini</small><b>{{d.today.truck_count}}</b></div>
+  <div class="stat {{#if d.pending_approval_count}}alert{{/if}}"><small>Menunggu persetujuan</small><b>{{d.pending_approval_count}}</b></div>
+  <div class="stat {{#if d.void_request_count}}alert{{/if}}"><small>Ajuan void</small><b>{{d.void_request_count}}</b></div>
+</div>
+
+{{#if d.alerts.length}}
+<div class="card" style="border-color:#FCA5A5">
+  <h2>⚠ Stok di bawah / mendekati minimum</h2>
+  <div class="tbl-wrap"><table>
+    <tr><th>Produk</th><th>Lokasi</th><th class="n">Stok (Ton)</th><th class="n">Minimum</th><th>Status</th></tr>
+    {{#each d.alerts}}<tr><td>{{product_name}}</td><td>{{location_name}}</td><td class="n">{{ton qty_ton}}</td><td class="n">{{ton min_ton}}</td><td><span class="badge {{level}}">{{#if (eq level "critical")}}Di bawah minimum{{else}}Mendekati minimum{{/if}}</span></td></tr>{{/each}}
+  </table></div>
+</div>
+{{/if}}
+
+<div class="card">
+  <h2>Stok per jenis pasir</h2>
+  <div class="tbl-wrap"><table>
+    <tr><th>Kode</th><th>Produk</th>{{#each d.locations}}<th class="n">{{name}}</th>{{/each}}<th class="n">Total (Ton)</th><th class="n">Minimum</th><th>Status</th></tr>
+    {{#each d.products}}
+    <tr><td>{{code}}</td><td>{{name}}</td>{{#each per_location}}<td class="n">{{ton qty_ton}}</td>{{/each}}<td class="n"><b>{{ton qty_ton}}</b></td><td class="n">{{ton min_ton}}</td>
+      <td><span class="badge {{status}}">{{#if (eq status "ok")}}Aman{{else if (eq status "warning")}}Menipis{{else}}Kritis{{/if}}</span></td></tr>
+    {{/each}}
+    <tfoot><tr><td colspan="2">Total</td>{{#each d.locations}}<td></td>{{/each}}<td class="n">{{ton d.total_ton}}</td><td colspan="2"></td></tr></tfoot>
+  </table></div>
+</div>
+
+{{#if (or pending.length voidRequests.length)}}
+<div class="grid g2">
+  {{#if pending.length}}
+  <div class="card"><h2>Menunggu persetujuan</h2>
+    <div class="tbl-wrap"><table>
+      <tr><th>Tanggal</th><th>No.</th><th>Pelanggan</th><th class="n">Ton</th></tr>
+      {{#each pending}}<tr><td>{{dt trx_at location.timezone}}</td><td><a href="{{../base}}/trx/{{id}}">{{#if doc_no}}{{doc_no}}{{else}}#{{id}}{{/if}}</a></td><td>{{partner_name}}</td><td class="n">{{ton total_ton}}</td></tr>{{/each}}
+    </table></div></div>
+  {{/if}}
+  {{#if voidRequests.length}}
+  <div class="card"><h2>Ajuan void</h2>
+    <div class="tbl-wrap"><table>
+      <tr><th>No.</th><th>Alasan</th><th class="n">Ton</th></tr>
+      {{#each voidRequests}}<tr><td><a href="{{../base}}/trx/{{id}}">{{#if doc_no}}{{doc_no}}{{else}}#{{id}}{{/if}}</a></td><td>{{void_request_reason}}</td><td class="n">{{ton total_ton}}</td></tr>{{/each}}
+    </table></div></div>
+  {{/if}}
+</div>
+{{/if}}
+
+<div class="card">
+  <div class="top" style="margin-bottom:8px"><h2 style="margin:0">Transaksi terbaru</h2><a href="{{base}}/trx">Lihat semua →</a></div>
+  {{> trxTable rows=recent base=base}}
+</div>

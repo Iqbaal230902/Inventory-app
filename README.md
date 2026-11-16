@@ -46,6 +46,17 @@ Gudang baru ditambah oleh Owner di *Pengaturan → Master Data → Gudang / Loka
 
 📖 Penjelasan lengkap setiap layar beserta screenshot: **[docs/SCREENS.md](docs/SCREENS.md)**
 
+### Admin panel (web)
+
+Untuk Owner & Admin di browser: **`/admin-panel/`** pada server API yang sama
+(produksi: https://api.berkahazzuramandiri.online/admin-panel/, lokal: http://localhost:3000/admin-panel/).
+Isi: dashboard stok, transaksi (setujui, void / ajukan void, PDF surat jalan), laporan + ekspor CSV,
+data master, stok minimum, manajemen user (Owner), jejak audit, pengaturan & logo.
+Dibangun dengan NestJS + Handlebars (`backend/src/admin-panel/`, template di `backend/views/admin-panel/`).
+Detail: [docs/SCREENS.md → Admin Panel](docs/SCREENS.md#admin-panel-web).
+
+<img src="docs/screenshots/admin-01-dashboard.png" width="720">
+
 ## Menjalankan (development)
 
 ### 1. Backend
@@ -82,7 +93,7 @@ generate ulang ikon Android dengan `cd app && dart run flutter_launcher_icons`.
 
 ### 3. Pengujian
 ```bash
-cd backend && npm run test:e2e     # 15 skenario posting stok (DB: pasir_silika_test)
+cd backend && npm run test:e2e     # 21 skenario: posting stok + admin panel (DB: pasir_silika_test)
 cd app && flutter test             # presisi desimal, format, status stok, efek offline
 cd backend && npm run db:reconcile # rekonsiliasi saldo vs ledger (jadwalkan via cron harian)
 ```
@@ -126,6 +137,7 @@ ssh iqbal@202.155.91.48 'cd ~/apps/pasir-silika-api && npm ci --no-audit --no-fu
 | FR-11 Offline: antrian SQLite terenkripsi, badge pending di app bar, sinkron otomatis (koneksi kembali, tiap 5 menit, WorkManager 15 menit) + "Sinkron Sekarang", idempoten via `client_uuid` | ✅ |
 | FR-12 Master data (produk, lokasi, kemasan, pelanggan/supplier, kendaraan, stok minimum, profil perusahaan) | ✅ |
 | Manajemen user (Owner), audit log, RBAC di setiap endpoint | ✅ |
+| Admin panel web `/admin-panel` (Owner & Admin): dashboard, transaksi, laporan + CSV, master, user, audit, pengaturan | ✅ |
 
 ## Keputusan desain penting
 

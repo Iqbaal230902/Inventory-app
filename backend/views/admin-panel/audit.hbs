@@ -1,0 +1,27 @@
+<div class="top"><h1>Jejak Audit</h1></div>
+<div class="card no-print">
+  <form class="filters" method="get">
+    <label>Entitas<select name="entity"><option value="">Semua</option>{{#each entities}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{value}}</option>{{/each}}</select></label>
+    <label>Aksi<select name="action"><option value="">Semua</option>{{#each actions}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select></label>
+    <label>User<select name="user_id"><option value="">Semua</option>{{#each users}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>{{/each}}</select></label>
+    <button class="btn" type="submit">Terapkan</button>
+    <a class="btn ghost" href="{{base}}/audit">Reset</a>
+  </form>
+</div>
+<div class="card">
+  {{#if rows.length}}
+  <div class="tbl-wrap"><table>
+    <tr><th>Waktu (WIB)</th><th>User</th><th>Aksi</th><th>Entitas</th><th>Perangkat / IP</th><th>Perubahan</th></tr>
+    {{#each rows}}
+    <tr><td style="white-space:nowrap">{{at}}</td><td>{{user}}</td><td>{{action}}</td>
+      <td>{{entity}}{{#if entityId}} {{#if trxLink}}<a href="{{trxLink}}">#{{entityId}}</a>{{else}}#{{entityId}}{{/if}}{{/if}}</td>
+      <td><small class="muted">{{device}}{{#if ip}}<br>{{ip}}{{/if}}</small></td>
+      <td>{{#if (or oldValues newValues)}}<details><summary>Lihat</summary>{{#if oldValues}}<small class="muted">Sebelum</small><pre>{{oldValues}}</pre>{{/if}}{{#if newValues}}<small class="muted">Sesudah</small><pre>{{newValues}}</pre>{{/if}}</details>{{/if}}</td></tr>
+    {{/each}}
+  </table></div>
+  {{else}}<div class="empty">Tidak ada catatan.</div>{{/if}}
+  <div class="pager">
+    {{#if prevUrl}}<a class="btn ghost sm" href="{{prevUrl}}">← Lebih baru</a>{{/if}}
+    {{#if nextUrl}}<a class="btn ghost sm" href="{{nextUrl}}">Lebih lama →</a>{{/if}}
+  </div>
+</div>

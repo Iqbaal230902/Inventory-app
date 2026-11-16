@@ -27,7 +27,7 @@ import { AppError } from '../common/app-error';
 import { AuthUser, CurrentUser, Roles } from '../common/auth-user';
 import { PrismaService } from '../prisma/prisma.service';
 
-class UserDto {
+export class UserDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)

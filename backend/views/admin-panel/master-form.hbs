@@ -1,0 +1,22 @@
+<div class="top"><div><a href="{{base}}/master/{{s.key}}">← {{s.title}}</a><h1>{{title}}</h1></div></div>
+<div class="card">
+  <form class="form" method="post" action="{{action}}">
+    {{#each fields}}
+      {{#if (eq type "checkbox")}}
+      <label class="f chk"><input type="checkbox" name="{{name}}" {{chk value}}><span>{{label}}</span></label>
+      {{else}}
+      <label class="f"><span>{{label}}{{#if required}} *{{/if}}</span>
+        {{#if (eq type "select")}}
+          <select name="{{name}}">{{#each options}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select>
+        {{else if (eq type "textarea")}}
+          <textarea name="{{name}}" maxlength="255">{{value}}</textarea>
+        {{else}}
+          <input name="{{name}}" value="{{value}}" {{#if (eq type "number")}}type="number"{{/if}} {{#if required}}required{{/if}} {{#if readonly}}readonly{{/if}}>
+        {{/if}}
+        {{#if help}}<small>{{help}}</small>{{/if}}
+      </label>
+      {{/if}}
+    {{/each}}
+    <div class="actions"><button class="btn" type="submit">Simpan</button><a class="btn ghost" href="{{base}}/master/{{s.key}}">Batal</a></div>
+  </form>
+</div>

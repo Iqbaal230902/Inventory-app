@@ -24,7 +24,38 @@ export class AuthService {
   ) {}
 
   async login(dto: LoginDto, ip?: string) {
-    const ident = dto.username.trim().toLowerCase();
+    const user = await this.verifyCredentials(
+      dto.username,
+      dto.password,
+      ip,
+      dto.device_id,
+    );
+    if (dto.device_id) {
+      await this.prisma.device.upsert({
+        where: { id: dto.device_id },
+        update: { userId: user.id, appVersion: dto.app_version },
+        create: {
+          id: dto.device_id,
+          userId: user.id,
+          appVersion: dto.app_version,
+        },
+      });
+    }
+    return this.issueTokens(user.id, dto.device_id);
+  }
+
+  /**
+   * Cek username/password + kunci 15 menit setelah 5x gagal + audit login.
+   * Dipakai login app (JWT) dan login admin panel (cookie).
+   */
+  async verifyCredentials(
+    username: string,
+    password: string,
+    ip?: string,
+    deviceId?: string,
+    channel?: string,
+  ) {
+    const ident = username.trim().toLowerCase();
     const user = await this.prisma.user.findFirst({
       where: { OR: [{ username: ident }, { email: ident }] },
     });
@@ -44,7 +75,7 @@ export class AuthService {
       );
     }
 
-    const ok = await bcrypt.compare(dto.password, user.passwordHash);
+    const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) {
       const failed = user.failedLoginCount + 1;
       await this.prisma.user.update({
@@ -58,10 +89,11 @@ export class AuthService {
             : { failedLoginCount: failed },
       });
       await this.audit.log({
-        user: { id: user.id, ip, deviceId: dto.device_id },
+        user: { id: user.id, ip, deviceId },
         action: 'login_failed',
         entity: 'user',
         entityId: user.id,
+        newValues: channel ? { channel } : undefined,
       });
       throw invalid;
     }
@@ -77,24 +109,14 @@ export class AuthService {
       where: { id: user.id },
       data: { failedLoginCount: 0, lockedUntil: null, lastLoginAt: new Date() },
     });
-    if (dto.device_id) {
-      await this.prisma.device.upsert({
-        where: { id: dto.device_id },
-        update: { userId: user.id, appVersion: dto.app_version },
-        create: {
-          id: dto.device_id,
-          userId: user.id,
-          appVersion: dto.app_version,
-        },
-      });
-    }
     await this.audit.log({
-      user: { id: user.id, ip, deviceId: dto.device_id },
+      user: { id: user.id, ip, deviceId },
       action: 'login',
       entity: 'user',
       entityId: user.id,
+      newValues: channel ? { channel } : undefined,
     });
-    return this.issueTokens(user.id, dto.device_id);
+    return user;
   }
 
   async refresh(refreshToken: string) {

@@ -1,0 +1,11 @@
+<div class="top"><h1>Stok Minimum</h1></div>
+<div class="card">
+  <p class="muted" style="margin-top:0">Batas stok minimum (Ton) per jenis pasir per lokasi. Dashboard menandai kuning bila stok ≤ 120% batas, merah bila di bawah batas. Kosong / 0 = tanpa batas.</p>
+  <form method="post">
+    <div class="tbl-wrap"><table>
+      <tr><th>Produk</th>{{#each locations}}<th class="n">{{name}}</th>{{/each}}</tr>
+      {{#each products}}<tr><td>{{name}}</td>{{#each cells}}<td class="n"><input name="{{name}}" value="{{value}}" inputmode="decimal" placeholder="0" style="width:120px;text-align:right"></td>{{/each}}</tr>{{/each}}
+    </table></div>
+    <div class="actions" style="margin-top:14px"><button class="btn" type="submit">Simpan</button></div>
+  </form>
+</div>

@@ -1,0 +1,26 @@
+<div class="top">
+  <h1>Transaksi</h1>
+  <a class="btn ghost" href="{{csvUrl}}">⬇ Ekspor CSV</a>
+</div>
+<div class="card no-print">
+  <form class="filters" method="get">
+    <label>Dari<input type="date" name="date_from" value="{{q.date_from}}"></label>
+    <label>Sampai<input type="date" name="date_to" value="{{q.date_to}}"></label>
+    {{#if (ne locations.length 1)}}
+    <label>Lokasi<select name="location_id"><option value="">Semua</option>{{#each locations}}<option value="{{id}}" {{sel id ../q.location_id}}>{{name}}</option>{{/each}}</select></label>
+    {{/if}}
+    <label>Jenis<select name="type"><option value="">Semua</option>{{#each types}}<option value="{{value}}" {{sel value ../q.type}}>{{label}}</option>{{/each}}</select></label>
+    <label>Status<select name="status"><option value="">Semua</option>{{#each statuses}}<option value="{{value}}" {{sel value ../q.status}}>{{label}}</option>{{/each}}</select></label>
+    <label>Cari<input type="search" name="q" value="{{q.q}}" placeholder="No. SJ, plat, pelanggan"></label>
+    <button class="btn" type="submit">Terapkan</button>
+    <a class="btn ghost" href="{{base}}/trx">Reset</a>
+  </form>
+</div>
+<div class="card">
+  {{> trxTable rows=rows base=base}}
+  <div class="pager">
+    {{#if prevUrl}}<a class="btn ghost sm" href="{{prevUrl}}">← Sebelumnya</a>{{/if}}
+    <span class="muted" style="align-self:center">Halaman {{page}}</span>
+    {{#if nextUrl}}<a class="btn ghost sm" href="{{nextUrl}}">Berikutnya →</a>{{/if}}
+  </div>
+</div>

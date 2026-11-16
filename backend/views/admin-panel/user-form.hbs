@@ -1,0 +1,21 @@
+<div class="top"><div><a href="{{base}}/users">← Manajemen User</a><h1>{{title}}</h1></div></div>
+<div class="card">
+  <form class="form" method="post" action="{{action}}">
+    <label class="f"><span>Nama *</span><input name="name" value="{{u.name}}" required maxlength="100"></label>
+    <label class="f"><span>Username *</span><input name="username" value="{{u.username}}" required pattern="[A-Za-z0-9._\-]{3,50}" autocomplete="off"><small>3–50 karakter huruf/angka/titik/garis bawah.</small></label>
+    <label class="f"><span>Email</span><input type="email" name="email" value="{{u.email}}"></label>
+    <label class="f"><span>Role *</span>
+      <select name="role" {{#if self}}disabled{{/if}}>{{#each roles}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select>
+      {{#if self}}<input type="hidden" name="role" value="owner"><small>Role akun sendiri tidak bisa diubah.</small>{{/if}}
+      <small>Owner: semua akses · Admin: kelola transaksi & master di lokasinya · Operator: input transaksi (1 lokasi) · Viewer: hanya lihat.</small>
+    </label>
+    <label class="f"><span>{{#if edit}}Password baru{{else}}Password *{{/if}}</span><input type="password" name="password" minlength="8" autocomplete="new-password" {{#unless edit}}required{{/unless}}><small>{{#if edit}}Kosongkan bila tidak diganti. Mengganti password akan mengeluarkan user dari semua perangkat.{{else}}Minimal 8 karakter.{{/if}}</small></label>
+    <div class="f"><span>Lokasi</span>
+      {{#each locations}}<label class="chk" style="display:flex;gap:8px;align-items:center"><input type="checkbox" name="location_ids" value="{{id}}" {{#if checked}}checked{{/if}}> {{name}} ({{code}})</label>{{/each}}
+      <small>Owner otomatis bisa melihat semua lokasi. Operator hanya 1 lokasi.</small>
+    </div>
+    {{#if self}}<input type="hidden" name="is_active" value="on">{{else}}
+    <label class="f chk"><input type="checkbox" name="is_active" {{chk u.isActive}}><span>Aktif</span></label>{{/if}}
+    <div class="actions"><button class="btn" type="submit">Simpan</button><a class="btn ghost" href="{{base}}/users">Batal</a></div>
+  </form>
+</div>

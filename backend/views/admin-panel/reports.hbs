@@ -1,0 +1,52 @@
+<div class="top">
+  <h1>Laporan</h1>
+  <div class="actions no-print"><a class="btn ghost" href="{{csvUrl}}">⬇ Ekspor CSV</a><button class="btn ghost" onclick="print()">🖨 Cetak</button></div>
+</div>
+<div class="card no-print">
+  <form class="filters" method="get">
+    <label>Dari<input type="date" name="from" value="{{from}}" required></label>
+    <label>Sampai<input type="date" name="to" value="{{to}}" required></label>
+    {{#if (ne locations.length 1)}}
+    <label>Lokasi<select name="location_id"><option value="">Semua</option>{{#each locations}}<option value="{{id}}" {{sel id ../locationId}}>{{name}}</option>{{/each}}</select></label>
+    {{/if}}
+    <button class="btn" type="submit">Tampilkan</button>
+  </form>
+</div>
+<p class="muted">Periode {{from}} s/d {{to}} (WIB). Transaksi yang di-void tidak dihitung.</p>
+
+<div class="grid g4" style="margin-bottom:18px">
+  <div class="stat"><small>Total masuk</small><b>{{ton totalIn}}</b></div>
+  <div class="stat"><small>Total keluar (penjualan)</small><b>{{ton totalOut}}</b></div>
+  <div class="stat"><small>Jumlah ritase keluar</small><b>{{trips}}</b></div>
+</div>
+
+<div class="card">
+  <h2>Mutasi per jenis pasir (Ton)</h2>
+  {{#if products.length}}
+  <div class="tbl-wrap"><table>
+    <tr><th>Kode</th><th>Produk</th><th class="n">Masuk produksi</th><th class="n">Masuk supplier</th><th class="n">Keluar (jual)</th><th class="n">Penyesuaian (±)</th></tr>
+    {{#each products}}<tr><td>{{code}}</td><td>{{name}}</td><td class="n">{{ton in_prod}}</td><td class="n">{{ton in_supp}}</td><td class="n">{{ton out_sale}}</td><td class="n">{{ton adj}}</td></tr>{{/each}}
+  </table></div>
+  {{else}}<div class="empty">Tidak ada transaksi pada periode ini.</div>{{/if}}
+</div>
+
+<div class="grid g2">
+  <div class="card">
+    <h2>Penjualan per pelanggan</h2>
+    {{#if customers.length}}
+    <div class="tbl-wrap"><table>
+      <tr><th>Pelanggan</th><th class="n">Ritase</th><th class="n">Ton</th></tr>
+      {{#each customers}}<tr><td>{{partner}}</td><td class="n">{{trips}}</td><td class="n">{{ton total}}</td></tr>{{/each}}
+    </table></div>
+    {{else}}<div class="empty">Belum ada penjualan.</div>{{/if}}
+  </div>
+  <div class="card">
+    <h2>Harian</h2>
+    {{#if days.length}}
+    <div class="tbl-wrap"><table>
+      <tr><th>Tanggal</th><th class="n">Masuk</th><th class="n">Keluar</th><th class="n">Ritase</th></tr>
+      {{#each days}}<tr><td>{{day}}</td><td class="n">{{ton in_ton}}</td><td class="n">{{ton out_ton}}</td><td class="n">{{trips}}</td></tr>{{/each}}
+    </table></div>
+    {{else}}<div class="empty">Tidak ada data.</div>{{/if}}
+  </div>
+</div>

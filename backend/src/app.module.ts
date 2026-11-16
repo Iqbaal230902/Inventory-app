@@ -1,6 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { AdminPanelModule } from './admin-panel/admin-panel.module';
 import { AuditController } from './audit/audit.controller';
 import { AuditService } from './audit/audit.service';
 import { AuthModule } from './auth/auth.module';
@@ -21,8 +22,9 @@ import { UsersModule } from './users/users.module';
 @Global()
 @Module({
   controllers: [AuditController, SettingsController],
-  providers: [AuditService, SettingsService],
-  exports: [AuditService, SettingsService],
+  // AuditController juga provider agar admin panel memakai filter akses yang sama.
+  providers: [AuditService, SettingsService, AuditController],
+  exports: [AuditService, SettingsService, AuditController],
 })
 class CoreModule {}
 
@@ -41,6 +43,7 @@ class CoreModule {}
     DashboardModule,
     SyncModule,
     DeliveryNotesModule,
+    AdminPanelModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

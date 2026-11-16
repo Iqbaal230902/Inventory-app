@@ -309,3 +309,44 @@ Menu ke enam master data berikut. Data diarsipkan (tidak dihapus) agar riwayat t
 - Daftar printer Bluetooth yang sudah di-*pair* di pengaturan HP. Pilih salah satu sebagai printer default.
 - **Cetak halaman tes** untuk memastikan printer berfungsi.
 - Meminta izin *Nearby devices* (Bluetooth) saat pertama dibuka.
+
+---
+
+# Admin Panel (web)
+
+Admin panel berbasis web (NestJS + Handlebars) berjalan di server yang sama dengan API:
+**https://api.berkahazzuramandiri.online/admin-panel/**. Khusus **Owner** dan **Admin**; Operator & Viewer
+memakai aplikasi di HP. Semua aksi memakai aturan bisnis & jejak audit yang sama dengan API.
+
+| Halaman | Rute | Akses | Isi |
+|---|---|---|---|
+| Login | `/admin-panel/login` | Owner, Admin | Sesi cookie 12 jam; kunci 15 menit setelah 5× gagal (sama dengan app) |
+| Dashboard | `/admin-panel` | Owner, Admin | Total stok, stok per mesh & per lokasi, peringatan stok minimum, ringkasan hari ini, antrian persetujuan & ajuan void, transaksi terbaru |
+| Transaksi | `/admin-panel/trx` | Owner, Admin | Filter tanggal/jenis/status/lokasi/cari, halaman, ekspor CSV |
+| Detail transaksi | `/admin-panel/trx/:id` | Owner, Admin | Rincian, barang, jejak audit, unduh surat jalan PDF, foto; **Setujui** (pending), **VOID** (Owner) / **Ajukan void** (Admin) |
+| Laporan | `/admin-panel/reports` | Owner, Admin | Mutasi per jenis pasir, penjualan per pelanggan, rekap harian, cetak, ekspor CSV (`;` + desimal koma, siap Excel) |
+| Data Master | `/admin-panel/master/:entity` | Owner, Admin (Gudang: Owner) | Produk (ubah saja), gudang, kemasan, pelanggan & supplier, kendaraan |
+| Stok Minimum | `/admin-panel/min-levels` | Owner, Admin | Tabel produk × lokasi |
+| Manajemen User | `/admin-panel/users` | Owner | Tambah/ubah user, role, lokasi, reset password, nonaktifkan, buka kunci login |
+| Jejak Audit | `/admin-panel/audit` | Owner, Admin | Filter entitas/aksi/user, nilai sebelum & sesudah |
+| Pengaturan | `/admin-panel/settings` | Owner, Admin | Profil perusahaan, aturan (batas netto, kunci H+1, dll.), unggah logo kop surat jalan |
+
+Keamanan: cookie `httpOnly` + `SameSite=Strict` (path `/admin-panel`), POST dari origin lain ditolak,
+sesi otomatis batal bila user dinonaktifkan atau password diganti.
+
+<p>
+<img src="screenshots/admin-00-login.png" width="420">
+<img src="screenshots/admin-01-dashboard.png" width="420">
+</p>
+<p>
+<img src="screenshots/admin-02-transaksi.png" width="420">
+<img src="screenshots/admin-03-detail.png" width="420">
+</p>
+<p>
+<img src="screenshots/admin-04-laporan.png" width="420">
+<img src="screenshots/admin-05-master.png" width="420">
+</p>
+<p>
+<img src="screenshots/admin-08-users.png" width="420">
+<img src="screenshots/admin-11-pengaturan.png" width="420">
+</p>
