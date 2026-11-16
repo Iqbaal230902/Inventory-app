@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:pdf/pdf.dart';
@@ -6,6 +5,7 @@ import 'package:pdf/widgets.dart' as pw;
 
 import '../../core/format.dart';
 import '../../data/models.dart';
+import 'company_branding.dart';
 
 /// URL verifikasi QR — memakai client_uuid sehingga SJ yang dicetak offline
 /// tetap dapat diverifikasi setelah tersinkron.
@@ -18,14 +18,10 @@ Future<Uint8List> buildDeliveryNotePdf({
   required String apiBase,
   required bool copy,
 }) async {
-  final doc = pw.Document(title: 'Surat Jalan ${t.docNo}', author: company['company_name']);
-  pw.MemoryImage? logo;
-  final logoB64 = company['company_logo_base64'] ?? '';
-  if (logoB64.isNotEmpty) {
-    try {
-      logo = pw.MemoryImage(base64Decode(logoB64.replaceFirst(RegExp(r'^data:.*?;base64,'), '')));
-    } catch (_) {}
-  }
+  final name = companyNameOf(company);
+  final doc = pw.Document(title: 'Surat Jalan ${t.docNo}', author: name);
+  final logo = pw.MemoryImage(await companyLogoBytes(company));
+  final contact = [company['company_address'], company['company_phone']].where((e) => (e ?? '').isNotEmpty).join(' · ');
   final small = const pw.TextStyle(fontSize: 8);
   final label = const pw.TextStyle(fontSize: 9);
   final bold = pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold);
@@ -42,14 +38,13 @@ Future<Uint8List> buildDeliveryNotePdf({
     pageFormat: PdfPageFormat.a5,
     margin: const pw.EdgeInsets.all(24),
     build: (_) => pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.stretch, children: [
-      // Kop
-      pw.Row(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
-        if (logo != null) pw.Container(width: 42, height: 42, margin: const pw.EdgeInsets.only(right: 8), child: pw.Image(logo)),
+      // Kop: logo PT + nama PT di sampingnya
+      pw.Row(crossAxisAlignment: pw.CrossAxisAlignment.center, children: [
+        pw.Container(width: 50, height: 50, margin: const pw.EdgeInsets.only(right: 10), child: pw.Image(logo)),
         pw.Expanded(
           child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
-            pw.Text(company['company_name'] ?? '', style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
-            pw.Text([company['company_address'], company['company_phone']].where((e) => (e ?? '').isNotEmpty).join(' · '),
-                style: small),
+            pw.Text(name, style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold)),
+            if (contact.isNotEmpty) pw.Text(contact, style: small),
           ]),
         ),
         pw.BarcodeWidget(barcode: pw.Barcode.qrCode(), data: verifyUrl(apiBase, t), width: 56, height: 56),

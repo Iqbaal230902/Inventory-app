@@ -172,6 +172,8 @@ Tombol besar untuk empat jenis transaksi:
 | Akses | O, A, Op |
 | Kode | `app/lib/features/delivery_note/print_screen.dart`, `delivery_note_pdf.dart`, `thermal_printer.dart` |
 
+- **Kop surat jalan: logo PT di kiri dan nama PT (*PT Berkah Azzura Mandiri*) di sampingnya**, berlaku untuk
+  PDF A5 di HP, PDF dari server, dan cetakan printer thermal (kop dicetak sebagai gambar).
 - Pratinjau surat jalan A5 dengan kop perusahaan, data pengiriman, tabel produk, kolom tanda tangan,
   dan **QR verifikasi**. QR membuka halaman publik `/api/v1/verify/...` untuk mengecek keaslian SJ.
 - **Cetak ke printer thermal** (Bluetooth ESC/POS 58/80 mm), **Bagikan PDF** (mis. ke WhatsApp), **Cetak A5**.
@@ -284,6 +286,7 @@ Menu ke enam master data berikut. Data diarsipkan (tidak dihapus) agar riwayat t
 | Kode | `app/lib/features/settings/settings_screen.dart` |
 
 - **Logo kop surat jalan**, nama perusahaan, alamat, telepon (tampil di surat jalan).
+  Jika logo belum diunggah, dipakai logo PT bawaan (`app/assets/branding/logo.png` dan `backend/assets/logo.png`).
 - Aturan bisnis:
   - **Batas wajar tonase per truk** (Ton): input di atas batas ini memunculkan peringatan.
   - **Jendela cek input ganda No. Polisi** (menit).

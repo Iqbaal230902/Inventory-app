@@ -8,6 +8,8 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Response } from 'express';
+import { existsSync, readFileSync } from 'fs';
+import { join } from 'path';
 import PDFDocument from 'pdfkit';
 import * as QRCode from 'qrcode';
 import { AppError } from '../common/app-error';
@@ -25,6 +27,20 @@ import {
   TRX_INCLUDE,
   TrxWithRelations,
 } from '../transactions/transaction.serializer';
+
+/** Logo PT bawaan (backend/assets/logo.png) — dipakai bila logo belum diunggah di Profil Perusahaan. */
+let defaultLogo: Buffer | null | undefined;
+function defaultCompanyLogo(): Buffer | null {
+  if (defaultLogo !== undefined) return defaultLogo;
+  const candidates = [
+    join(process.cwd(), 'assets', 'logo.png'),
+    join(__dirname, '..', '..', 'assets', 'logo.png'), // src/delivery-notes (ts-jest)
+    join(__dirname, '..', '..', '..', 'assets', 'logo.png'), // dist/src/delivery-notes
+  ];
+  const found = candidates.find((f) => existsSync(f));
+  defaultLogo = found ? readFileSync(found) : null;
+  return defaultLogo;
+}
 
 const esc = (s: string | number | null | undefined) =>
   String(s ?? '-').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -131,37 +147,43 @@ export class DeliveryNotesController {
     );
     const W = doc.page.width - 56;
 
-    // Kop
+    // Kop: logo PT + nama PT di sampingnya
     let x = 28;
+    const logos: Buffer[] = [];
     if (s.company_logo_base64) {
+      logos.push(
+        Buffer.from(
+          s.company_logo_base64.replace(/^data:.*?;base64,/, ''),
+          'base64',
+        ),
+      );
+    }
+    const fallback = defaultCompanyLogo();
+    if (fallback) logos.push(fallback);
+    for (const logo of logos) {
       try {
-        doc.image(
-          Buffer.from(
-            s.company_logo_base64.replace(/^data:.*?;base64,/, ''),
-            'base64',
-          ),
-          28,
-          28,
-          { fit: [44, 44] },
-        );
-        x = 80;
+        doc.image(logo, 28, 26, { fit: [52, 52] });
+        x = 88;
+        break;
       } catch {
-        /* logo tidak valid — abaikan */
+        /* logo tidak valid — coba logo bawaan */
       }
     }
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(13)
-      .text(s.company_name, x, 28, { width: W - (x - 28) - 70 });
-    doc
-      .font('Helvetica')
-      .fontSize(8)
-      .text(
-        [s.company_address, s.company_phone].filter(Boolean).join(' · '),
-        x,
-        doc.y,
-        { width: W - (x - 28) - 70 },
-      );
+    const contact = [s.company_address, s.company_phone]
+      .filter(Boolean)
+      .join(' · ');
+    const textW = W - (x - 28) - 70;
+    doc.font('Helvetica-Bold').fontSize(15);
+    const nameH = doc.heightOfString(s.company_name, { width: textW });
+    const blockH = nameH + (contact ? 12 : 0);
+    const top = Math.max(26, 26 + (52 - blockH) / 2);
+    doc.text(s.company_name, x, top, { width: textW });
+    if (contact) {
+      doc
+        .font('Helvetica')
+        .fontSize(8)
+        .text(contact, x, doc.y + 2, { width: textW });
+    }
     doc.image(qr, 28 + W - 60, 26, { width: 60 });
     doc
       .moveTo(28, 92)

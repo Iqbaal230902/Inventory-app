@@ -3,7 +3,9 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 
 import '../../core/format.dart';
+import '../../core/widgets.dart' show companyName;
 import '../../data/models.dart';
+import 'company_branding.dart';
 import 'delivery_note_pdf.dart';
 
 class ThermalPrinterException implements Exception {
@@ -48,7 +50,7 @@ class ThermalPrinter {
     return [
       ...g.reset(),
       ...g.text('TES PRINTER', styles: const PosStyles(align: PosAlign.center, bold: true, height: PosTextSize.size2)),
-      ...g.text('Pasir Silika · ${mm80 ? '80' : '58'} mm', styles: const PosStyles(align: PosAlign.center)),
+      ...g.text('${_ascii(companyName)} - ${mm80 ? '80' : '58'} mm', styles: const PosStyles(align: PosAlign.center)),
       ...g.feed(3),
       ...g.cut(),
     ];
@@ -66,8 +68,18 @@ class ThermalPrinter {
     final g = Generator(mm80 ? PaperSize.mm80 : PaperSize.mm58, await CapabilityProfile.load());
     const center = PosStyles(align: PosAlign.center);
     final b = <int>[...g.reset()];
-    b.addAll(g.text(_ascii(company['company_name'] ?? ''),
-        styles: const PosStyles(align: PosAlign.center, bold: true, height: PosTextSize.size2)));
+    // Kop: logo PT + nama PT di sampingnya (dicetak sebagai gambar).
+    try {
+      final header = await thermalHeaderImage(
+        logo: await companyLogoBytes(company),
+        name: companyNameOf(company),
+        widthPx: mm80 ? 576 : 384,
+      );
+      b.addAll(g.image(header));
+    } catch (_) {
+      b.addAll(g.text(_ascii(companyNameOf(company)),
+          styles: const PosStyles(align: PosAlign.center, bold: true, height: PosTextSize.size2)));
+    }
     for (final l in [company['company_address'], company['company_phone']]) {
       if ((l ?? '').isNotEmpty) b.addAll(g.text(_ascii(l!), styles: center));
     }
