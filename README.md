@@ -89,6 +89,30 @@ cd backend && npm run db:reconcile # rekonsiliasi saldo vs ledger (jadwalkan via
 E2E test tidak menghapus data (memakai kode unik per run), jadi aman diulang. Untuk
 mengosongkan DB test secara manual: `dotenv-cli -e .env.test -- npx prisma migrate reset`.
 
+## Produksi (server)
+
+API produksi: **https://api.berkahazzuramandiri.online/api/v1**. Build APK rilis dengan:
+```bash
+cd app && flutter build apk --release --dart-define=API_BASE_URL=https://api.berkahazzuramandiri.online/api/v1
+```
+
+Susunan di server (Ubuntu, user `iqbal`):
+
+| Bagian | Lokasi / nilai |
+|---|---|
+| Kode backend | `~/apps/pasir-silika-api` (`.env` produksi hanya ada di server, chmod 600) |
+| Proses | pm2 `pasir-silika-api` → `127.0.0.1:3000` (`ecosystem.config.js`), `pm2 save` + service `pm2-iqbal` (auto-resurrect saat reboot) |
+| Database | MySQL 8.4 lokal (bind 127.0.0.1), DB & user `pasir_silika` |
+| Reverse proxy | nginx `/etc/nginx/sites-available/api.berkahazzuramandiri.online` + sertifikat Let's Encrypt |
+
+Update ke versi terbaru (dari laptop, di folder `backend/`):
+```bash
+rsync -az --delete --exclude node_modules --exclude dist --exclude uploads --exclude '.env*' \
+  --exclude coverage --exclude test ./ iqbal@202.155.91.48:apps/pasir-silika-api/
+ssh iqbal@202.155.91.48 'cd ~/apps/pasir-silika-api && npm ci --no-audit --no-fund && npm run build \
+  && npx prisma migrate deploy && pm2 reload pasir-silika-api && pm2 save'
+```
+
 ## Yang sudah diimplementasikan (MVP / P0)
 
 | PRD | Status |

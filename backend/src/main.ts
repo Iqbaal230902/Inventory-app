@@ -10,7 +10,8 @@ async function bootstrap() {
   app.useBodyParser('json', { limit: '2mb' });
   setupApp(app);
   const port = Number(process.env.PORT ?? 3000);
-  await app.listen(port, '0.0.0.0');
+  // Di server produksi set HOST=127.0.0.1 agar hanya bisa diakses lewat reverse proxy (nginx).
+  await app.listen(port, process.env.HOST ?? '0.0.0.0');
   Logger.log(`API berjalan di http://localhost:${port}/api/v1`, 'Bootstrap');
 }
 void bootstrap();
