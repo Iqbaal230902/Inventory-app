@@ -164,6 +164,7 @@ ssh iqbal@202.155.91.48 'cd ~/apps/pasir-silika-api && npm ci --no-audit --no-fu
 - Kunci "tutup buku bulanan" belum ada (kunci H+1 sudah).
 - Belum diuji di perangkat nyata: printer thermal Bluetooth, unggah foto, sinkron background WorkManager.
   Alur login → dashboard → input keluar **offline** → cetak SJ → sinkron otomatis sudah diuji di emulator Android 16.
-- Rilis: ganti `JWT_SECRET`, pasang HTTPS (build rilis menolak HTTP), buat keystore rilis
-  (`app/android/app/build.gradle.kts`), dan jadwalkan `npm run db:reconcile` + backup MySQL harian.
+- Rilis: APK ditandatangani keystore rilis lewat `app/android/key.properties` (tidak masuk git; menunjuk ke
+  `~/.android-keystores/berkah-azzura-release.jks`). **Backup keystore + key.properties** — tanpa keystore
+  yang sama, update APK tidak bisa dipasang di atas versi lama. Jadwalkan `npm run db:reconcile` + backup MySQL harian.
 - `permission_handler` dipin ke 12.x karena 13.x butuh platform `android-37` yang belum terpasang di SDK lokal.
