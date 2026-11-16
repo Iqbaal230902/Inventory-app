@@ -8,6 +8,39 @@ Inventory-app/
 └── app/       Flutter 3.44 · Riverpod 3 · go_router · Dio · drift + SQLCipher
 ```
 
+## Tampilan aplikasi
+
+<p>
+<img src="docs/screenshots/01-login.png" width="180">
+<img src="docs/screenshots/02-dashboard.png" width="180">
+<img src="docs/screenshots/04-pilih-jenis-transaksi.png" width="180">
+<img src="docs/screenshots/05-form-barang-keluar.png" width="180">
+</p>
+<p>
+<img src="docs/screenshots/07-riwayat.png" width="180">
+<img src="docs/screenshots/08-detail-transaksi.png" width="180">
+<img src="docs/screenshots/10-cetak-surat-jalan.png" width="180">
+<img src="docs/screenshots/11-status-sinkron.png" width="180">
+</p>
+
+| # | Layar | Rute | Akses |
+|---|---|---|---|
+| 1 | Login | `/login` | Semua |
+| 2 | Dashboard Stok | `/` | Semua |
+| 3 | Pilih Jenis Transaksi | sheet dari **+ Transaksi** | Owner, Admin, Operator |
+| 4 | Form Transaksi (Keluar / Masuk / Penyesuaian) | `/trx/new/:type`, `/trx/edit/:id` | Owner, Admin, Operator |
+| 5 | Riwayat Transaksi | `/history` | Semua |
+| 6 | Detail Transaksi + jejak audit | `/trx/:key` | Semua |
+| 7 | Cetak Surat Jalan (thermal / PDF A5) | `/trx/:key/print` | Owner, Admin, Operator |
+| 8 | Sinkronisasi | `/sync` | Semua |
+| 9 | Lainnya (pengaturan) | `/more` | Semua |
+| 10 | Master Data (produk, lokasi, kemasan, pelanggan, kendaraan, stok minimum) | `/master`, `/master/:entity` | Owner, Admin |
+| 11 | Manajemen User | `/users` | Owner |
+| 12 | Profil Perusahaan & Aturan | `/settings/company` | Owner, Admin |
+| 13 | Printer Bluetooth | `/settings/printer` | Owner, Admin, Operator |
+
+📖 Penjelasan lengkap setiap layar beserta screenshot: **[docs/SCREENS.md](docs/SCREENS.md)**
+
 ## Menjalankan (development)
 
 ### 1. Backend

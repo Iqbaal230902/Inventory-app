@@ -11,6 +11,9 @@ void showTrxTypeSheet(BuildContext context, WidgetRef ref) {
   showModalBottomSheet(
     context: context,
     showDragHandle: true,
+    // Tampil di atas bottom nav & tinggi mengikuti isi (4 tombol tidak muat di batas default 9/16 layar).
+    useRootNavigator: true,
+    isScrollControlled: true,
     builder: (c) {
       Widget big(String type, String title, String sub, IconData icon, Color color) => Padding(
             padding: const EdgeInsets.only(bottom: 10),
