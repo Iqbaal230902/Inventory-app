@@ -83,37 +83,45 @@ class HomeShell extends StatelessWidget {
     (Icons.home_outlined, Icons.home_rounded, 'Stok'),
     (Icons.receipt_long_outlined, Icons.receipt_long_rounded, 'Riwayat'),
     (Icons.sync_rounded, Icons.sync_rounded, 'Sinkron'),
-    (Icons.person_outline_rounded, Icons.person_rounded, 'Lainnya'),
+    (Icons.person_outline_rounded, Icons.person_rounded, 'Pengaturan'),
   ];
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Scaffold(
-      body: shell,
-      extendBody: false,
-      // Navigasi "pill" dengan indikator lingkaran (design system).
-      bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        child: Container(
-          height: 70,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(35),
-            boxShadow: [BoxShadow(color: cs.shadow, blurRadius: 16, offset: const Offset(0, 4))],
-          ),
-          child: Row(children: [
-            for (var i = 0; i < _items.length; i++)
-              Expanded(
-                child: _NavItem(
-                  icon: shell.currentIndex == i ? _items[i].$2 : _items[i].$1,
-                  label: _items[i].$3,
-                  selected: shell.currentIndex == i,
-                  onTap: () => shell.goBranch(i, initialLocation: i == shell.currentIndex),
+    // Tombol back di tab Riwayat / Sinkron / Pengaturan kembali ke tab Stok;
+    // di tab Stok, back menutup aplikasi seperti biasa.
+    return PopScope(
+      canPop: shell.currentIndex == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) shell.goBranch(0);
+      },
+      child: Scaffold(
+        body: shell,
+        extendBody: false,
+        // Navigasi "pill" dengan indikator lingkaran (design system).
+        bottomNavigationBar: SafeArea(
+          minimum: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: Container(
+            height: 70,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHigh,
+              borderRadius: BorderRadius.circular(35),
+              boxShadow: [BoxShadow(color: cs.shadow, blurRadius: 16, offset: const Offset(0, 4))],
+            ),
+            child: Row(children: [
+              for (var i = 0; i < _items.length; i++)
+                Expanded(
+                  child: _NavItem(
+                    icon: shell.currentIndex == i ? _items[i].$2 : _items[i].$1,
+                    label: _items[i].$3,
+                    selected: shell.currentIndex == i,
+                    onTap: () => shell.goBranch(i, initialLocation: i == shell.currentIndex),
+                  ),
                 ),
-              ),
-          ]),
+            ]),
+          ),
         ),
       ),
     );

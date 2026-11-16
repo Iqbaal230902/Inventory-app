@@ -29,6 +29,7 @@ class EntitySpec {
     required this.titleOf,
     required this.subtitleOf,
     this.deleteOwnerOnly = false,
+    this.ownerOnly = false,
   });
   final String title;
   final String path;
@@ -37,6 +38,9 @@ class EntitySpec {
   final String Function(Map<String, dynamic>) titleOf;
   final String Function(Map<String, dynamic>) subtitleOf;
   final bool deleteOwnerOnly;
+
+  /// Hanya Owner (super admin) yang boleh melihat & mengelola entitas ini.
+  final bool ownerOnly;
 }
 
 const _tz = {'Asia/Jakarta': 'WIB', 'Asia/Makassar': 'WITA', 'Asia/Jayapura': 'WIT'};
@@ -60,15 +64,16 @@ final entitySpecs = <String, EntitySpec>{
     subtitleOf: (m) => '${m['code']} · ${m['category']}${m['mesh_size'] != null ? ' · ${m['mesh_size']}' : ''}',
   ),
   'locations': EntitySpec(
-    title: 'Lokasi',
+    title: 'Gudang / Lokasi',
     path: '/locations',
-    icon: Icons.place_outlined,
+    icon: Icons.warehouse_outlined,
     deleteOwnerOnly: true,
+    ownerOnly: true,
     fields: const [
       FieldSpec('code', 'Kode (mis. GDA)', required: true),
       FieldSpec('name', 'Nama', required: true),
       FieldSpec('type', 'Tipe', type: FieldType.select, required: true,
-          options: {'tambang': 'Tambang', 'pabrik': 'Pabrik Pengolahan', 'gudang': 'Gudang', 'stockpile': 'Stockpile'}),
+          options: {'gudang': 'Gudang', 'tambang': 'Tambang', 'pabrik': 'Pabrik Pengolahan', 'stockpile': 'Stockpile'}),
       FieldSpec('address', 'Alamat'),
       FieldSpec('timezone', 'Zona waktu', type: FieldType.select, options: _tz),
     ],
@@ -120,10 +125,12 @@ final entitySpecs = <String, EntitySpec>{
 class MasterMenuScreen extends ConsumerWidget {
   const MasterMenuScreen({super.key});
   @override
-  Widget build(BuildContext context, WidgetRef ref) => Scaffold(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isOwner = ref.watch(currentUserProvider)?.isOwner ?? false;
+    return Scaffold(
         appBar: AppBar(title: const Text('Master Data')),
         body: ListView(children: [
-          for (final e in entitySpecs.entries)
+          for (final e in entitySpecs.entries.where((e) => !e.value.ownerOnly || isOwner))
             ListTile(
               leading: Icon(e.value.icon),
               title: Text(e.value.title),
@@ -139,6 +146,7 @@ class MasterMenuScreen extends ConsumerWidget {
           ),
         ]),
       );
+  }
 }
 
 final _masterListProvider = FutureProvider.autoDispose.family<List<Map<String, dynamic>>, String>((ref, path) async {
@@ -157,6 +165,9 @@ class MasterListScreen extends ConsumerWidget {
     if (spec == null) return const Scaffold(body: Center(child: Text('Tidak ditemukan')));
     final async = ref.watch(_masterListProvider(spec.path));
     final user = ref.watch(currentUserProvider);
+    if (spec.ownerOnly && !(user?.isOwner ?? false)) {
+      return const Scaffold(body: Center(child: Text('Hanya Owner yang dapat mengelola data ini.')));
+    }
 
     Future<void> openForm([Map<String, dynamic>? item]) async {
       final saved = await showModalBottomSheet<bool>(

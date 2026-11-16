@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 export const DEFAULT_SETTINGS: Record<string, string> = {
-  company_name: 'CV Pasir Silika',
+  company_name: 'PT Berkah Azzura Mandiri',
   company_address: '',
   company_phone: '',
   company_logo_base64: '',

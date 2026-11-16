@@ -24,13 +24,13 @@ class AuthController extends Notifier<AuthState> {
     return const AuthState(AuthStatus.loading);
   }
 
-  /// Sesi tetap aktif saat offline selama refresh token belum kedaluwarsa (FR-01).
+  /// Sesi tidak punya batas waktu: user tetap login (juga setelah app ditutup / offline)
+  /// sampai logout atau dinonaktifkan Owner. Pembukaan ulang app dijaga biometrik (app_lock.dart).
   Future<void> _restore() async {
     final store = ref.read(sessionStoreProvider);
     final rt = await store.refreshToken();
-    final exp = await store.refreshExpiresAt();
     final user = await store.user();
-    if (rt != null && user != null && (exp == null || exp.isAfter(DateTime.now()))) {
+    if (rt != null && user != null) {
       state = AuthState(AuthStatus.loggedIn, user: AppUser.fromJson(user));
       unawaited(_refreshProfile());
     } else {

@@ -7,6 +7,7 @@ import 'core/providers.dart';
 import 'core/router.dart';
 import 'core/theme.dart';
 import 'data/local/database.dart';
+import 'features/auth/app_lock.dart';
 import 'sync/background.dart';
 import 'sync/sync_lifecycle.dart';
 
@@ -36,7 +37,7 @@ class SilikaApp extends ConsumerWidget {
     final mode = ref.watch(themeModeProvider);
     return SyncLifecycle(
       child: MaterialApp.router(
-        title: 'Pasir Silika',
+        title: 'PT Berkah Azzura Mandiri',
         debugShowCheckedModeBanner: false,
         theme: buildTheme(Brightness.light),
         darkTheme: buildTheme(Brightness.dark),
@@ -45,6 +46,7 @@ class SilikaApp extends ConsumerWidget {
         locale: const Locale('id'),
         supportedLocales: const [Locale('id'), Locale('en')],
         localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        builder: (context, child) => AppLockGate(child: child ?? const SizedBox.shrink()),
       ),
     );
   }

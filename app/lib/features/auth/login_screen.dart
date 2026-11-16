@@ -61,25 +61,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               child: Form(
                 key: _form,
                 child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                  Center(
-                    child: Container(
-                      width: 84,
-                      height: 84,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(26),
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [cs.primary, const Color(0xFF1D4ED8)],
-                        ),
-                        boxShadow: [BoxShadow(color: cs.primary.withValues(alpha: 0.35), blurRadius: 24, offset: const Offset(0, 10))],
-                      ),
-                      child: const Icon(Icons.landscape_rounded, size: 46, color: Colors.white),
-                    ),
-                  ),
+                  const Center(child: AppLogo()),
                   const SizedBox(height: 20),
-                  Text('Pasir Silika', textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800)),
-                  Text('Manajemen stok material curah', textAlign: TextAlign.center, style: TextStyle(color: cs.onSurfaceVariant)),
+                  Text(companyName, textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 4),
+                  Text('Manajemen Stok Pasir Silika', textAlign: TextAlign.center, style: TextStyle(color: cs.onSurfaceVariant)),
                   const SizedBox(height: 16),
                   Center(
                     child: Pill(online ? 'Terhubung ke jaringan' : 'Tidak ada koneksi',

@@ -148,28 +148,23 @@ export class LocationsController extends Base {
     });
   }
 
+  // Gudang/lokasi baru hanya bisa dibuat & diubah Owner (super admin).
+  // Admin/Operator diberi akses lewat Manajemen User.
   @Post()
-  @Roles('owner', 'admin')
+  @Roles('owner')
   async create(@CurrentUser() u: AuthUser, @Body() d: LocationDto) {
     const r = await this.prisma.location.create({ data: this.data(d) });
-    // Admin pembuat otomatis mendapat akses ke lokasi baru
-    if (u.role === 'admin') {
-      await this.prisma.userLocation.create({
-        data: { userId: u.id, locationId: r.id },
-      });
-    }
     await this.log(u, 'create', 'location', r.id, null, r);
     return r;
   }
 
   @Put(':id')
-  @Roles('owner', 'admin')
+  @Roles('owner')
   async update(
     @CurrentUser() u: AuthUser,
     @Param('id', ParseIntPipe) id: number,
     @Body() d: LocationDto,
   ) {
-    if (!canAccessLocation(u, id)) throw AppError.forbidden();
     const old = await this.prisma.location.findUniqueOrThrow({ where: { id } });
     const r = await this.prisma.location.update({
       where: { id },

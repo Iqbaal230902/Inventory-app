@@ -10,7 +10,8 @@ login sebagai **Owner**. Beberapa menu hanya muncul untuk peran tertentu; lihat 
 | Operator Timbangan | Op |
 | Viewer / Akuntan | V |
 
-Navigasi utama memakai bottom nav berbentuk pill dengan 4 tab: **Stok · Riwayat · Sinkron · Lainnya**.
+Navigasi utama memakai bottom nav berbentuk pill dengan 4 tab: **Stok · Riwayat · Sinkron · Pengaturan**.
+Tombol **back** di tab Riwayat, Sinkron, atau Pengaturan kembali ke tab **Stok**; back di tab Stok menutup aplikasi.
 Tombol **+ Transaksi** ada di tab Stok.
 
 ---
@@ -26,10 +27,32 @@ Tombol **+ Transaksi** ada di tab Stok.
 | Kode | `app/lib/features/auth/login_screen.dart` |
 
 - Masuk dengan **username atau email** dan password.
+- Logo dan nama **PT Berkah Azzura Mandiri** di bagian atas (logo sama dengan ikon aplikasi).
 - Indikator koneksi (*Terhubung ke jaringan* / *Offline*) di atas form.
 - **Pengaturan server**: mengganti alamat API, misalnya untuk HP fisik di jaringan lokal.
 - Akun terkunci 15 menit setelah 5× salah password (diatur di backend).
-- Setelah login, sesi tetap berlaku saat offline (refresh token 30 hari).
+- **Sesi tanpa batas waktu**: setelah login, user tetap masuk walaupun app ditutup, HP di-restart,
+  atau offline, sampai menekan **Keluar** atau dinonaktifkan Owner. Diatur dengan `REFRESH_TOKEN_DAYS=0` di backend.
+
+---
+
+## 1b. Kunci Biometrik
+
+<img src="screenshots/01b-kunci-biometrik.png" width="260">
+
+| | |
+|---|---|
+| Rute | lapisan di atas semua layar (bukan rute) |
+| Akses | Semua user yang sudah login |
+| Kode | `app/lib/features/auth/app_lock.dart` |
+
+- Jika aplikasi ditinggal **≥ 5 menit** (pindah ke app lain, layar mati, atau app ditutup), app terkunci
+  saat dibuka lagi dan meminta **sidik jari / Face ID** dari HP.
+- Jika biometrik gagal atau tidak bisa dipakai, sistem HP menawarkan **PIN / pola layar** sebagai cadangan.
+- **Masuk dengan password** di layar kunci: keluar dari akun lalu login ulang dengan username & password.
+  Tetap ditolak jika masih ada transaksi belum tersinkron, supaya data tidak hilang.
+- Jika HP belum punya sidik jari / kunci layar, app tidak dikunci.
+- Bisa dimatikan di **Pengaturan → Kunci dengan sidik jari / Face ID** (default aktif).
 
 ---
 
@@ -40,13 +63,13 @@ Tombol **+ Transaksi** ada di tab Stok.
 | | |
 |---|---|
 | Rute | `/` (tab **Stok**) |
-| Akses | Semua (pilih lokasi hanya untuk user multi-lokasi) |
+| Akses | Semua (pilihan lokasi baru muncul jika ada lebih dari 1 gudang aktif) |
 | Kode | `app/lib/features/dashboard/dashboard_screen.dart` |
 
-- **Kartu Total stok** (gradien biru): total ton semua varian dan waktu data terakhir ("Data per …").
+- **Kartu Total stok** (gradien biru): total ton keempat jenis pasir dan waktu data terakhir ("Data per …").
 - **Hari ini**: total masuk, keluar (ton) dan jumlah ritase.
 - **Banner merah** jika ada produk di bawah stok minimum. Ketuk untuk melihat produk dan lokasinya.
-- **Stok per varian**: tiap mesh menampilkan ton, status (*Aman* / *Menipis* / *Kritis*),
+- **Stok per varian**: Mesh 4/8, 8/14, 14/20, 20/40. Tiap mesh menampilkan ton, status (*Aman* / *Menipis* / *Kritis*),
   progress bar terhadap batas minimum, dan konversi ke kemasan (Jumbo Bag, karung).
 - Owner/Admin melihat tombol pintas **Perlu ditinjau** dan **Pengajuan void** jika ada.
 - Saat offline, angka tetap tampil dari cache lokal ditambah efek transaksi yang belum tersinkron.
@@ -174,20 +197,20 @@ Tombol besar untuk empat jenis transaksi:
 
 ---
 
-## 9. Lainnya (Pengaturan)
+## 9. Pengaturan
 
-<img src="screenshots/12-lainnya.png" width="260">
+<img src="screenshots/12-pengaturan.png" width="260">
 
 | | |
 |---|---|
-| Rute | `/more` (tab **Lainnya**) |
+| Rute | `/more` (tab **Pengaturan**) |
 | Akses | Semua (menu sesuai peran) |
 | Kode | `app/lib/features/settings/settings_screen.dart` |
 
 - Kartu profil: nama, peran, username, lokasi yang ditugaskan.
 - Menu: **Master Data** dan **Profil Perusahaan & Aturan** (O, A), **Manajemen User** (Owner),
   **Transaksi perlu ditinjau** (O, A), **Printer Bluetooth** (O, A, Op).
-- **Server** (alamat API), **Tema** (Ikuti sistem / Terang / Gelap), **Versi aplikasi**, dan **Keluar**.
+- **Kunci dengan sidik jari / Face ID** (aktif/nonaktif), **Server** (alamat API), **Tema** (Ikuti sistem / Terang / Gelap), **Versi aplikasi**, dan **Keluar**.
 
 ---
 
@@ -203,14 +226,22 @@ Tombol besar untuk empat jenis transaksi:
 
 Menu ke enam master data berikut. Data diarsipkan (tidak dihapus) agar riwayat transaksi tetap utuh.
 
-### 10.1 Produk / Mesh · 10.2 Lokasi · 10.3 Kemasan
+### 10.1 Produk / Mesh · 10.2 Gudang / Lokasi · 10.3 Kemasan
 
-<img src="screenshots/14-master-produk.png" width="220"> <img src="screenshots/15-master-lokasi.png" width="220"> <img src="screenshots/16-master-kemasan.png" width="220">
+<img src="screenshots/14-master-produk.png" width="220"> <img src="screenshots/15-master-gudang.png" width="220"> <img src="screenshots/16-master-kemasan.png" width="220">
 
-- **Produk / Mesh**: kode (mis. `M1420`), nama, ukuran mesh, kategori, densitas (Ton/m³), urutan tampil.
-- **Lokasi**: kode yang dipakai di nomor SJ (mis. `GDA`), nama, tipe, alamat, zona waktu.
+- **Produk / Mesh**: 4 jenis pasir silika, yaitu Mesh 4/8, 8/14, 14/20, 20/40. Field: kode (mis. `M1420`),
+  nama, ukuran mesh, kategori, densitas (Ton/m³), urutan tampil.
+- **Gudang / Lokasi** (khusus Owner): saat ini hanya ada 1 gudang (*Gudang A*, kode `GDA`).
+  Gudang baru ditambah lewat tombol **+**: kode (dipakai di nomor SJ, mis. `GDB` → `SJ/GDB/…`),
+  nama, tipe (default Gudang), alamat, zona waktu. Setelah dibuat, Owner memberi akses ke Admin/Operator
+  lewat **Manajemen User**. Begitu ada lebih dari 1 gudang aktif, pilihan lokasi otomatis muncul di dashboard.
 - **Kemasan**: nama (Curah, Jumbo Bag 1 Ton, Karung 50 kg), ton per kemasan, curah atau tidak.
 - Tombol **+** untuk menambah, ikon arsip untuk menonaktifkan.
+
+<img src="screenshots/15b-tambah-gudang.png" width="220">
+
+*Form tambah gudang (Owner).*
 
 ### 10.4 Pelanggan & Supplier · 10.5 Kendaraan · 10.6 Stok Minimum
 

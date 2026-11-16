@@ -208,3 +208,29 @@ class OfflineBanner extends ConsumerWidget {
     );
   }
 }
+
+/// Nama perusahaan pemilik aplikasi (ditampilkan di login & layar kunci).
+const companyName = 'PT Berkah Azzura Mandiri';
+
+/// Logo perusahaan dalam lingkaran putih.
+class AppLogo extends StatelessWidget {
+  const AppLogo({super.key, this.size = 128});
+  final double size;
+  @override
+  Widget build(BuildContext context) => Container(
+        width: size,
+        height: size,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.18),
+                blurRadius: 24,
+                offset: const Offset(0, 10)),
+          ],
+        ),
+        child: Image.asset('assets/branding/logo.png', fit: BoxFit.cover),
+      );
+}

@@ -168,8 +168,13 @@ export class AuthService {
       { expiresIn },
     );
     const refresh = randomBytes(48).toString('base64url');
-    const days = Number(this.config.get('REFRESH_TOKEN_DAYS') ?? 30);
-    const expiresAt = new Date(Date.now() + days * 86400_000);
+    // REFRESH_TOKEN_DAYS=0 (default) → sesi tidak pernah kedaluwarsa; user tetap
+    // login sampai logout atau dinonaktifkan Owner. Token tetap dirotasi tiap refresh.
+    const days = Number(this.config.get('REFRESH_TOKEN_DAYS') ?? 0);
+    const expiresAt =
+      days > 0
+        ? new Date(Date.now() + days * 86400_000)
+        : new Date('9999-12-31T00:00:00.000Z');
     await this.prisma.refreshToken.create({
       data: { userId, tokenHash: sha256(refresh), deviceId, expiresAt },
     });

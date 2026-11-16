@@ -12,12 +12,13 @@ import '../../core/format.dart';
 import '../../core/providers.dart';
 import '../../core/widgets.dart';
 import '../../main.dart';
+import '../auth/app_lock.dart';
 import '../auth/auth_controller.dart';
 
 final _versionProvider = FutureProvider((ref) async => (await PackageInfo.fromPlatform()).version);
 final _baseUrlProvider = FutureProvider((ref) => ref.watch(sessionStoreProvider).baseUrl());
 
-/// Menu "Lainnya": profil, master data, user, pengaturan, logout.
+/// Tab "Pengaturan": profil, master data, user, pengaturan, logout.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -52,7 +53,7 @@ class SettingsScreen extends ConsumerWidget {
     final mode = ref.watch(themeModeProvider);
     if (user == null) return const SizedBox.shrink();
     return Scaffold(
-      appBar: AppBar(title: const Text('Lainnya')),
+      appBar: AppBar(title: const Text('Pengaturan')),
       body: ListView(children: [
         ListTile(
           leading: CircleAvatar(child: Text(user.name.characters.first.toUpperCase())),
@@ -93,6 +94,18 @@ class SettingsScreen extends ConsumerWidget {
             ],
           ),
         ),
+        Builder(builder: (context) {
+          final supported = ref.watch(deviceAuthSupportedProvider).value ?? false;
+          return SwitchListTile(
+            secondary: const Icon(Icons.fingerprint_rounded),
+            title: const Text('Kunci dengan sidik jari / Face ID'),
+            subtitle: Text(supported
+                ? 'Minta verifikasi bila aplikasi ditinggal ≥ ${appLockAfter.inMinutes} menit'
+                : 'Atur sidik jari / kunci layar di pengaturan HP terlebih dulu'),
+            value: supported && ref.watch(biometricLockPrefProvider),
+            onChanged: supported ? (v) => ref.read(biometricLockPrefProvider.notifier).set(v) : null,
+          );
+        }),
         ListTile(
           leading: const Icon(Icons.dns_outlined),
           title: const Text('Server'),

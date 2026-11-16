@@ -15,10 +15,9 @@ async function main() {
   });
   const prisma = app.get(PrismaService);
 
-  const locs = [
-    { code: 'GDA', name: 'Gudang A', type: 'gudang' as const },
-    { code: 'TMB1', name: 'Tambang 1', type: 'tambang' as const },
-  ];
+  // Saat ini hanya 1 gudang. Gudang baru ditambah Owner lewat
+  // Lainnya → Master Data → Gudang / Lokasi.
+  const locs = [{ code: 'GDA', name: 'Gudang A', type: 'gudang' as const }];
   for (const l of locs) {
     await prisma.location.upsert({
       where: { code: l.code },
@@ -29,18 +28,9 @@ async function main() {
   const gda = await prisma.location.findUniqueOrThrow({
     where: { code: 'GDA' },
   });
-  const tmb = await prisma.location.findUniqueOrThrow({
-    where: { code: 'TMB1' },
-  });
 
+  // 4 jenis pasir silika yang dijual.
   const products = [
-    {
-      code: 'RAW',
-      name: 'Pasir Silika Mentah',
-      meshSize: null,
-      category: 'raw' as const,
-      sortOrder: 0,
-    },
     {
       code: 'M0408',
       name: 'Mesh 4/8',
@@ -68,13 +58,6 @@ async function main() {
       meshSize: '20/40',
       category: 'finished' as const,
       sortOrder: 4,
-    },
-    {
-      code: 'HALUS',
-      name: 'Pasir Halus / Abu',
-      meshSize: null,
-      category: 'byproduct' as const,
-      sortOrder: 5,
     },
   ];
   for (const p of products) {
@@ -108,7 +91,7 @@ async function main() {
       name: 'Kepala Gudang',
       role: 'admin' as const,
       pw: 'admin12345',
-      locs: [gda.id, tmb.id],
+      locs: [gda.id],
     },
     {
       username: 'operator',
@@ -122,7 +105,7 @@ async function main() {
       name: 'Akuntan',
       role: 'viewer' as const,
       pw: 'viewer12345',
-      locs: [gda.id, tmb.id],
+      locs: [gda.id],
     },
   ];
   for (const u of users) {
@@ -193,14 +176,12 @@ async function main() {
     const owner = await prisma.user.findUniqueOrThrow({
       where: { username: 'owner' },
     });
-    const all = await prisma.product.findMany();
+    const all = await prisma.product.findMany({ where: { isActive: true } });
     const opening: Record<string, string> = {
-      RAW: '420.000',
       M0408: '85.500',
       M0814: '140.250',
       M1420: '55.000',
       M2040: '98.750',
-      HALUS: '30.000',
     };
     const now = new Date().toISOString();
     await posting.create(

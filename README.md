@@ -26,6 +26,7 @@ Inventory-app/
 | # | Layar | Rute | Akses |
 |---|---|---|---|
 | 1 | Login | `/login` | Semua |
+| 1b | Kunci biometrik (setelah ditinggal ≥ 5 menit) | lapisan di atas semua layar | Semua |
 | 2 | Dashboard Stok | `/` | Semua |
 | 3 | Pilih Jenis Transaksi | sheet dari **+ Transaksi** | Owner, Admin, Operator |
 | 4 | Form Transaksi (Keluar / Masuk / Penyesuaian) | `/trx/new/:type`, `/trx/edit/:id` | Owner, Admin, Operator |
@@ -33,11 +34,15 @@ Inventory-app/
 | 6 | Detail Transaksi + jejak audit | `/trx/:key` | Semua |
 | 7 | Cetak Surat Jalan (thermal / PDF A5) | `/trx/:key/print` | Owner, Admin, Operator |
 | 8 | Sinkronisasi | `/sync` | Semua |
-| 9 | Lainnya (pengaturan) | `/more` | Semua |
-| 10 | Master Data (produk, lokasi, kemasan, pelanggan, kendaraan, stok minimum) | `/master`, `/master/:entity` | Owner, Admin |
+| 9 | Pengaturan | `/more` | Semua |
+| 10 | Master Data (produk, kemasan, pelanggan, kendaraan, stok minimum) | `/master`, `/master/:entity` | Owner, Admin |
+| 10b | Gudang / Lokasi (tambah gudang baru) | `/master/locations` | Owner |
 | 11 | Manajemen User | `/users` | Owner |
 | 12 | Profil Perusahaan & Aturan | `/settings/company` | Owner, Admin |
 | 13 | Printer Bluetooth | `/settings/printer` | Owner, Admin, Operator |
+
+Data awal: **1 gudang** (Gudang A, `GDA`) dan **4 jenis pasir silika**: Mesh 4/8, 8/14, 14/20, 20/40.
+Gudang baru ditambah oleh Owner di *Pengaturan → Master Data → Gudang / Lokasi*.
 
 📖 Penjelasan lengkap setiap layar beserta screenshot: **[docs/SCREENS.md](docs/SCREENS.md)**
 
@@ -72,6 +77,9 @@ flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000/api/v1   # emulator
 ```
 Alamat server juga bisa diubah dari layar login → "Pengaturan server".
 
+Ikon aplikasi & logo ada di `app/assets/branding/` (logo login: `logo.png`). Setelah mengganti gambar,
+generate ulang ikon Android dengan `cd app && dart run flutter_launcher_icons`.
+
 ### 3. Pengujian
 ```bash
 cd backend && npm run test:e2e     # 15 skenario posting stok (DB: pasir_silika_test)
@@ -85,7 +93,7 @@ mengosongkan DB test secara manual: `dotenv-cli -e .env.test -- npx prisma migra
 
 | PRD | Status |
 |---|---|
-| FR-01 Auth: JWT 1 jam + refresh 30 hari (rotasi), sesi tetap jalan offline, user nonaktif langsung 401, bcrypt, kunci 15 menit setelah 5× gagal | ✅ |
+| FR-01 Auth: JWT 1 jam + refresh token tanpa batas waktu (rotasi; tetap login sampai logout), kunci biometrik (sidik jari / Face ID) setelah app ditinggal ≥ 5 menit, sesi tetap jalan offline, user nonaktif langsung 401, bcrypt, kunci 15 menit setelah 5× gagal | ✅ |
 | FR-02 Dashboard: total & per mesh, hijau/kuning(≤120%)/merah, ringkasan hari ini, auto-refresh 30 dtk, "Data per …" saat offline + efek transaksi lokal | ✅ |
 | FR-03 Masuk/Keluar/Penyesuaian: bruto/tara/netto, kemasan→ton, No. Polisi otomatis, foto ≤500 KB, nomor `SJ/{LOK}/{YYYYMM}/{0001}`, validasi stok negatif (override Owner), peringatan input ganda 15 menit, batas wajar per truk | ✅ |
 | FR-04 Riwayat (infinite scroll, filter, cari), detail + jejak audit, void dengan mutasi pembalik, Admin "ajukan void", kunci H+1, tanpa hapus permanen (dijaga trigger DB) | ✅ |
@@ -117,7 +125,7 @@ mengosongkan DB test secara manual: `dotenv-cli -e .env.test -- npx prisma migra
 
 - **Fase 2+** sesuai PRD: produksi/ayakan, opname & penyusutan (tabel sudah disiapkan), transfer antar lokasi,
   ekspor Excel/PDF, push notification FCM & ringkasan harian 07.00, integrasi timbangan.
-- PIN/biometrik (opsional di FR-01) dan kunci "tutup buku bulanan" belum ada (kunci H+1 sudah).
+- Kunci "tutup buku bulanan" belum ada (kunci H+1 sudah).
 - Belum diuji di perangkat nyata: printer thermal Bluetooth, unggah foto, sinkron background WorkManager.
   Alur login → dashboard → input keluar **offline** → cetak SJ → sinkron otomatis sudah diuji di emulator Android 16.
 - Rilis: ganti `JWT_SECRET`, pasang HTTPS (build rilis menolak HTTP), buat keystore rilis
