@@ -53,7 +53,7 @@ Gudang baru ditambah oleh Owner di *Pengaturan → Master Data → Gudang / Loka
 ### Admin panel (web)
 
 Untuk Owner & Admin di browser: **`/admin-panel/`** pada server API yang sama
-(produksi: https://api.berkahazzuramandiri.online/admin-panel/, lokal: http://localhost:3000/admin-panel/).
+(produksi: `https://<domain-api>/admin-panel/`, lokal: http://localhost:3000/admin-panel/).
 Isi: dashboard stok, transaksi (setujui, void / ajukan void, PDF surat jalan), laporan + ekspor CSV,
 data master, stok minimum, manajemen user (Owner), jejak audit, pengaturan & logo.
 Dibangun dengan NestJS + Handlebars (`backend/src/admin-panel/`, template di `backend/views/admin-panel/`).
@@ -106,27 +106,39 @@ mengosongkan DB test secara manual: `dotenv-cli -e .env.test -- npx prisma migra
 
 ## Produksi (server)
 
-API produksi: **https://api.berkahazzuramandiri.online/api/v1**. Build APK rilis dengan:
+> Repo ini publik: alamat server, akun SSH, domain, dan kredensial **tidak** dicatat di sini.
+> Simpan di catatan internal tim. Di bawah ini `<domain-api>`, `<user>@<server>`, dan `<app-dir>` adalah placeholder.
+
+Build APK rilis (alamat API produksi ditanam saat build):
 ```bash
-cd app && flutter build apk --release --dart-define=API_BASE_URL=https://api.berkahazzuramandiri.online/api/v1
+cd app && flutter build apk --release --dart-define=API_BASE_URL=https://<domain-api>/api/v1
 ```
 
-Susunan di server (Ubuntu, user `iqbal`):
+Susunan umum di server:
 
-| Bagian | Lokasi / nilai |
+| Bagian | Keterangan |
 |---|---|
-| Kode backend | `~/apps/pasir-silika-api` (`.env` produksi hanya ada di server, chmod 600) |
-| Proses | pm2 `pasir-silika-api` → `127.0.0.1:3000` (`ecosystem.config.js`), `pm2 save` + service `pm2-iqbal` (auto-resurrect saat reboot) |
-| Database | MySQL 8.4 lokal (bind 127.0.0.1), DB & user `pasir_silika` |
-| Reverse proxy | nginx `/etc/nginx/sites-available/api.berkahazzuramandiri.online` + sertifikat Let's Encrypt |
+| Kode backend | `<app-dir>`; `.env` produksi hanya ada di server (chmod 600) |
+| Proses | pm2 `pasir-silika-api`, bind `127.0.0.1` lewat env `HOST`; `ecosystem.config.js` **hanya ada di server** |
+| Database | MySQL 8 lokal (bind 127.0.0.1) |
+| Reverse proxy | nginx + sertifikat Let's Encrypt |
 
 Update ke versi terbaru (dari laptop, di folder `backend/`):
 ```bash
-rsync -az --delete --exclude node_modules --exclude dist --exclude uploads --exclude '.env*' \
-  --exclude coverage --exclude test ./ iqbal@202.155.91.48:apps/pasir-silika-api/
-ssh iqbal@202.155.91.48 'cd ~/apps/pasir-silika-api && npm ci --no-audit --no-fund && npm run build \
-  && npx prisma migrate deploy && pm2 reload pasir-silika-api && pm2 save'
+SERVER=<user>@<server>; APP_DIR=<app-dir>
+EXCLUDES=(--exclude node_modules --exclude dist --exclude uploads --exclude '.env*' \
+  --exclude coverage --exclude test --exclude ecosystem.config.js)
+
+# 1. Backup database produksi dulu (mysqldump --single-transaction) ke folder di luar <app-dir>.
+# 2. Cek dulu apa yang akan berubah/terhapus (dry-run):
+rsync -azn --delete --itemize-changes "${EXCLUDES[@]}" ./ "$SERVER:$APP_DIR/"
+# 3. Sinkron + build + migrasi + reload:
+rsync -az --delete "${EXCLUDES[@]}" ./ "$SERVER:$APP_DIR/"
+ssh "$SERVER" "cd $APP_DIR && npm ci --no-audit --no-fund && npm run build \
+  && npx prisma migrate deploy && pm2 reload pasir-silika-api && pm2 save"
 ```
+`--exclude ecosystem.config.js` wajib: file itu tidak ada di repo, jadi tanpa exclude `--delete` akan menghapusnya.
+Setelah server di-update, bagikan APK rilis baru ke semua HP pada waktu yang sama.
 
 ## Yang sudah diimplementasikan (MVP / P0)
 

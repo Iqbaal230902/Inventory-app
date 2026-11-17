@@ -315,7 +315,7 @@ Menu ke enam master data berikut. Data diarsipkan (tidak dihapus) agar riwayat t
 # Admin Panel (web)
 
 Admin panel berbasis web (NestJS + Handlebars) berjalan di server yang sama dengan API:
-**https://api.berkahazzuramandiri.online/admin-panel/**. Khusus **Owner** dan **Admin**; Operator & Viewer
+**`https://<domain-api>/admin-panel/`**. Khusus **Owner** dan **Admin**; Operator & Viewer
 memakai aplikasi di HP. Semua aksi memakai aturan bisnis & jejak audit yang sama dengan API.
 
 | Halaman | Rute | Akses | Isi |
