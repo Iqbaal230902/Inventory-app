@@ -176,7 +176,10 @@ async function main() {
     const owner = await prisma.user.findUniqueOrThrow({
       where: { username: 'owner' },
     });
-    const all = await prisma.product.findMany({ where: { isActive: true } });
+    // Saldo awal hanya untuk pasir mesh (ton); bahan baku mentah (rit) mulai dari 0.
+    const all = await prisma.product.findMany({
+      where: { isActive: true, unit: 'ton' },
+    });
     const opening: Record<string, string> = {
       M0408: '85.500',
       M0814: '140.250',

@@ -1,6 +1,6 @@
 {{#if rows.length}}
 <div class="tbl-wrap"><table>
-  <tr><th>Tanggal</th><th>No. Dokumen</th><th>Jenis</th><th>Lokasi</th><th>Pelanggan / Supplier</th><th>No. Polisi</th><th>Produk</th><th class="n">Ton</th><th>Status</th><th>Oleh</th></tr>
+  <tr><th>Tanggal</th><th>No. Dokumen</th><th>Jenis</th><th>Lokasi</th><th>Pelanggan / Supplier</th><th>No. Polisi</th><th>Produk</th><th class="n">Jumlah</th><th>Status</th><th>Oleh</th></tr>
   {{#each rows}}
   <tr class="{{#if (eq status "void")}}dim{{/if}}">
     <td class="nw">{{dt trx_at location.timezone}}</td>
@@ -10,7 +10,7 @@
     <td>{{partner_name}}</td>
     <td style="white-space:nowrap">{{plate_number}}</td>
     <td class="prod">{{#each items}}{{product_name}}{{#unless @last}}, {{/unless}}{{/each}}</td>
-    <td class="n">{{ton total_ton}}</td>
+    <td class="n nw">{{trxQty this}}</td>
     <td><span class="badge {{status}}">{{statusLabel status}}</span>{{#if void_requested}} <span class="badge warning">ajuan void</span>{{/if}}</td>
     <td class="nw">{{created_by.name}}</td>
   </tr>

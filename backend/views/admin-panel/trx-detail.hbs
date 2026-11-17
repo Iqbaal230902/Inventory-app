@@ -38,9 +38,9 @@
   <div class="card">
     <h2>Barang</h2>
     <div class="tbl-wrap"><table>
-      <tr><th>Produk</th><th>Arah</th><th>Kemasan</th><th class="n">Ton</th></tr>
-      {{#each t.items}}<tr><td>{{product_name}}</td><td>{{#if (eq direction "in")}}Masuk{{else}}Keluar{{/if}}</td><td>{{#if package_qty}}{{package_qty}} × {{packaging_name}}{{else}}{{packaging_name}}{{/if}}</td><td class="n">{{ton qty_ton}}</td></tr>{{/each}}
-      <tfoot><tr><td colspan="3">Total</td><td class="n">{{ton t.total_ton}}</td></tr></tfoot>
+      <tr><th>Produk</th><th>Arah</th><th>Kemasan</th><th class="n">Jumlah</th></tr>
+      {{#each t.items}}<tr><td>{{product_name}}</td><td>{{#if (eq direction "in")}}Masuk{{else}}Keluar{{/if}}</td><td>{{#if package_qty}}{{package_qty}} × {{packaging_name}}{{else}}{{packaging_name}}{{/if}}</td><td class="n">{{#if (eq unit "rit")}}{{qty qty_ton unit}}{{else}}{{ton qty_ton}} Ton{{/if}}</td></tr>{{/each}}
+      <tfoot><tr><td colspan="3">Total</td><td class="n">{{trxQty t}}</td></tr></tfoot>
     </table></div>
 
     {{#if p.can_approve}}

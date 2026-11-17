@@ -18,6 +18,8 @@ class Products extends Table {
   TextColumn get name => text()();
   TextColumn get meshSize => text().nullable()();
   TextColumn get category => text()();
+  /// 'ton' (pasir mesh) atau 'rit' (bahan baku mentah, dihitung per truk: 1 rit = 1 truk).
+  TextColumn get unit => text().withDefault(const Constant('ton'))();
   IntColumn get sortOrder => integer().withDefault(const Constant(0))();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
   @override
@@ -147,7 +149,20 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (m) => m.createAll(),
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            // v2: bahan baku mentah per rit (satuan produk).
+            await m.addColumn(products, products.unit);
+            // Paksa pull penuh berikutnya agar satuan produk yang sudah ada ikut terisi.
+            await (delete(keyValues)..where((t) => t.key.equals('last_pull_server_time'))).go();
+          }
+        },
+      );
 
   // ---- key-value ----
   Future<String?> getKv(String key) async =>

@@ -40,6 +40,14 @@ export function startOfLocalDay(
   return new Date(localMidnightAsUtc - off * 60000);
 }
 
+/** Awal bulan (tgl 1, 00:00 lokal) dalam UTC untuk bulan `date` di zona `timeZone`. */
+export function startOfLocalMonth(date: Date, timeZone: string): Date {
+  const p = zonedParts(date, timeZone);
+  const firstAsUtc = Date.UTC(+p.year, +p.month - 1, 1);
+  const off = offsetMinutes(new Date(firstAsUtc), timeZone);
+  return new Date(firstAsUtc - off * 60000);
+}
+
 export function periodOf(date: Date, timeZone: string) {
   const p = zonedParts(date, timeZone);
   return `${p.year}${p.month}`;

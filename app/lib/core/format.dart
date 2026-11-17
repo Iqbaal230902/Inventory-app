@@ -43,6 +43,20 @@ String fmtTon(Decimal? d, {int decimals = 3}) {
 
 String fmtTonStr(String? s, {int decimals = 3}) => s == null ? '-' : fmtTon(dec(s), decimals: decimals);
 
+/// Jumlah sesuai satuan produk: ton → "12,500 Ton", rit (bahan baku mentah) → "3 Rit".
+String fmtQty(Decimal? d, String unit) {
+  if (d == null) return '-';
+  if (unit == 'rit') {
+    final whole = d == d.truncate();
+    return '${fmtTon(d, decimals: whole ? 0 : 3)} Rit';
+  }
+  return '${fmtTon(d)} Ton';
+}
+
+/// Angka saja (tanpa satuan) sesuai satuan produk.
+String fmtQtyNum(Decimal d, String unit) =>
+    unit == 'rit' ? fmtTon(d, decimals: d == d.truncate() ? 0 : 3) : fmtTon(d);
+
 /// Normalisasi No. Polisi: "bg 1234 xy" → "BG1234XY"
 String normalizePlate(String s) => s.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
 
@@ -110,6 +124,7 @@ String fmtRelative(DateTime? d) {
 }
 
 const trxTypeLabels = {
+  'IN_RAW': 'Bahan Baku Masuk',
   'IN_PRODUCTION': 'Masuk – Produksi',
   'IN_SUPPLIER': 'Masuk – Supplier',
   'OUT_SALE': 'Keluar – Penjualan',

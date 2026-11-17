@@ -29,6 +29,7 @@ class MasterRepo {
                 name: p['name'] as String,
                 meshSize: Value(p['mesh_size'] as String?),
                 category: p['category'] as String,
+                unit: Value((p['unit'] as String?) ?? 'ton'),
                 sortOrder: Value((p['sort_order'] as int?) ?? 0),
                 isActive: Value(p['is_active'] != false),
               )),

@@ -3,6 +3,7 @@ import {
   Direction,
   LineRole,
   Prisma,
+  StockUnit,
   TrxStatus,
   TrxType,
 } from '@prisma/client';
@@ -10,7 +11,7 @@ import { randomBytes, randomUUID } from 'crypto';
 import { AuditService } from '../audit/audit.service';
 import { AppError } from '../common/app-error';
 import { AuthUser, canAccessLocation } from '../common/auth-user';
-import { dec, Decimal, tonId } from '../common/decimal';
+import { dec, Decimal, qtyId, tonId } from '../common/decimal';
 import { periodOf, startOfLocalDay } from '../common/time';
 import { PrismaService, Tx } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
@@ -24,6 +25,7 @@ import { TRX_INCLUDE, TrxWithRelations } from './transaction.serializer';
 
 export const DOC_PREFIX: Partial<Record<TrxType, string>> = {
   OUT_SALE: 'SJ',
+  IN_RAW: 'BB',
   IN_PRODUCTION: 'BM',
   IN_SUPPLIER: 'BM',
   ADJUSTMENT: 'ADJ',
@@ -47,12 +49,15 @@ export interface PostLine {
   lineRole?: LineRole;
   packagingUnitId?: number | null;
   packageQty?: Decimal | null;
+  /** Untuk produk bersatuan rit, nilai ini = jumlah rit. */
   qtyTon: Decimal;
+  unit?: StockUnit;
 }
 
 interface Shortage {
   product_id: number;
   product_name: string;
+  unit: StockUnit;
   available_ton: string;
   requested_ton: string;
 }
@@ -99,6 +104,7 @@ export class PostingService {
 
     const header = await this.buildHeader(dto, dto.trx_type);
     const lines = await this.buildLines(dto.trx_type, dto.items);
+    this.assertRaw(dto.trx_type, header);
     await this.validateCommon(dto, dto.trx_type, lines, header);
     const warnings = await this.collectWarnings(
       dto.trx_type,
@@ -256,6 +262,7 @@ export class PostingService {
 
     const header = await this.buildHeader(merged, type);
     const lines = await this.buildLines(type, merged.items);
+    this.assertRaw(type, header);
     await this.validateCommon(merged, type, lines, header);
     const itemsChanged = dto.items !== undefined;
 
@@ -609,6 +616,20 @@ export class PostingService {
       if (!p) throw AppError.validation('Produk tidak ditemukan.');
       if (!p.isActive)
         throw AppError.validation(`Produk ${p.name} tidak aktif.`);
+      const isRit = p.unit === 'rit';
+      if (type === 'IN_RAW' && !isRit) {
+        throw AppError.validation(
+          `${p.name} bukan bahan baku mentah. Gunakan Masuk – Produksi/Supplier.`,
+        );
+      }
+      if (isRit && type !== 'IN_RAW' && type !== 'ADJUSTMENT') {
+        throw AppError.validation(
+          `${p.name} dicatat per rit lewat menu Bahan Baku Masuk.`,
+        );
+      }
+      if (isRit && it.packaging_unit_id) {
+        throw AppError.validation(`${p.name} tidak memakai kemasan.`);
+      }
       const pu = it.packaging_unit_id
         ? packaging.find((x) => x.id === it.packaging_unit_id)
         : null;
@@ -620,9 +641,16 @@ export class PostingService {
       if (it.qty_ton) qty = dec(it.qty_ton);
       else if (pkgQty && pu)
         qty = pkgQty.times(dec(pu.tonPerUnit)).toDecimalPlaces(3);
-      else throw AppError.validation(`Jumlah ton untuk ${p.name} wajib diisi.`);
+      else
+        throw AppError.validation(
+          `Jumlah ${isRit ? 'rit' : 'ton'} untuk ${p.name} wajib diisi.`,
+        );
       if (qty.lte(0))
         throw AppError.validation(`Jumlah ${p.name} harus lebih dari 0.`);
+      if (isRit && !qty.isInteger())
+        throw AppError.validation(
+          `Jumlah rit ${p.name} harus bilangan bulat (1 rit = 1 truk).`,
+        );
 
       let direction: Direction;
       if (type === 'ADJUSTMENT') {
@@ -646,8 +674,21 @@ export class PostingService {
         packagingUnitId: pu?.id ?? null,
         packageQty: pkgQty,
         qtyTon: qty,
+        unit: p.unit,
       };
     });
+  }
+
+  /** Bahan Baku Masuk (IN_RAW): dihitung per truk (rit), tanpa timbangan/tonase. */
+  private assertRaw(
+    type: InputTrxType,
+    header: Awaited<ReturnType<PostingService['buildHeader']>>,
+  ) {
+    if (type === 'IN_RAW' && header.netTon) {
+      throw AppError.validation(
+        'Bahan baku masuk dicatat per rit (jumlah truk), tanpa bruto/tara timbangan.',
+      );
+    }
   }
 
   private async validateCommon(
@@ -662,7 +703,10 @@ export class PostingService {
     if (type === 'OUT_SALE' && !header.partnerName) {
       throw AppError.validation('Pelanggan wajib diisi untuk barang keluar.');
     }
-    const total = lines.reduce((s, l) => s.plus(l.qtyTon), dec(0));
+    // Hanya baris bersatuan ton (rit bahan baku tidak ikut tonase/timbangan).
+    const total = lines
+      .filter((l) => l.unit !== 'rit')
+      .reduce((s, l) => s.plus(l.qtyTon), dec(0));
     if (header.netTon && !dec(header.netTon).eq(total)) {
       throw AppError.validation(
         `Total produk (${tonId(total)} Ton) harus sama dengan netto timbangan (${tonId(header.netTon)} Ton).`,
@@ -778,6 +822,7 @@ export class PostingService {
     return {
       product_id: productId,
       product_name: p?.name ?? `#${productId}`,
+      unit: p?.unit ?? 'ton',
       available_ton: bal.toFixed(3),
       requested_ton: requested.toFixed(3),
     };
@@ -787,7 +832,7 @@ export class PostingService {
     const s = shortages[0];
     return new AppError(
       'INSUFFICIENT_STOCK',
-      `Stok ${s.product_name} di ${locationName} hanya ${tonId(s.available_ton)} Ton (diminta ${tonId(s.requested_ton)} Ton).`,
+      `Stok ${s.product_name} di ${locationName} hanya ${qtyId(s.available_ton, s.unit)} (diminta ${qtyId(s.requested_ton, s.unit)}).`,
       HttpStatus.UNPROCESSABLE_ENTITY,
       { shortages },
     );
@@ -882,6 +927,7 @@ export class PostingService {
 }
 
 const INPUT_TYPES = [
+  'IN_RAW',
   'IN_PRODUCTION',
   'IN_SUPPLIER',
   'OUT_SALE',

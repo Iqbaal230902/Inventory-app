@@ -62,7 +62,10 @@ class TrxItemView {
   String get productName => (j['product_name'] as String?) ?? '-';
   String? get packagingName => j['packaging_name'] as String?;
   String? get packageQty => j['package_qty'] as String?;
+  /// Untuk item bersatuan rit, nilai ini = jumlah rit.
   Decimal get qtyTon => dec(j['qty_ton'] as String?);
+  String get unit => (j['unit'] as String?) ?? 'ton';
+  bool get isRit => unit == 'rit';
   String get direction => (j['direction'] as String?) ?? 'in';
 }
 
@@ -94,6 +97,15 @@ class TrxView {
   Decimal? get tareTon => j['tare_ton'] == null ? null : dec(j['tare_ton'] as String);
   Decimal? get netTon => j['net_ton'] == null ? null : dec(j['net_ton'] as String);
   Decimal get totalTon => dec(j['total_ton'] as String?);
+  Decimal get totalRit => dec(j['total_rit'] as String?);
+
+  /// Ringkasan jumlah: "15,900 Ton", "3 Rit", atau keduanya (penyesuaian campuran).
+  String get qtyLabel {
+    final parts = <String>[];
+    if (totalTon != Decimal.zero || totalRit == Decimal.zero) parts.add(fmtQty(totalTon, 'ton'));
+    if (totalRit != Decimal.zero) parts.add(fmtQty(totalRit, 'rit'));
+    return parts.join(' + ');
+  }
   DateTime get trxAt => DateTime.parse(j['trx_at'] as String);
   String? get notes => j['notes'] as String?;
   String? get voidReason => j['void_reason'] as String?;

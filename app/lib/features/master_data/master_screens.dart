@@ -61,7 +61,8 @@ final entitySpecs = <String, EntitySpec>{
       FieldSpec('sort_order', 'Urutan tampil', type: FieldType.integer),
     ],
     titleOf: (m) => '${m['name']}',
-    subtitleOf: (m) => '${m['code']} · ${m['category']}${m['mesh_size'] != null ? ' · ${m['mesh_size']}' : ''}',
+    subtitleOf: (m) =>
+        '${m['code']} · ${m['category']}${m['mesh_size'] != null ? ' · ${m['mesh_size']}' : ''} · satuan ${m['unit'] == 'rit' ? 'rit' : 'ton'}',
   ),
   'locations': EntitySpec(
     title: 'Gudang / Lokasi',
@@ -394,10 +395,11 @@ class _MinLevelsScreenState extends ConsumerState<MinLevelsScreen> {
             margin: const EdgeInsets.only(bottom: 8),
             child: ListTile(
               title: Text(r.product.name),
-              subtitle: Text('Minimum: ${m == null ? 'belum diatur' : '${fmtTonStr(m.minTon)} Ton'}'),
+              subtitle: Text('Minimum: ${m == null ? 'belum diatur' : fmtQty(dec(m.minTon), r.product.unit)}'),
               trailing: const Icon(Icons.edit),
               onTap: () async {
-                final ctrl = TextEditingController(text: m == null ? '' : fmtTonStr(m.minTon).replaceAll('.', ''));
+                final ctrl = TextEditingController(
+                    text: m == null ? '' : fmtQtyNum(dec(m.minTon), r.product.unit).replaceAll('.', ''));
                 final v = await showDialog<String>(
                   context: context,
                   builder: (c) => AlertDialog(
@@ -407,7 +409,7 @@ class _MinLevelsScreenState extends ConsumerState<MinLevelsScreen> {
                       autofocus: true,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       inputFormatters: [TonInputFormatter()],
-                      decoration: const InputDecoration(labelText: 'Stok minimum (Ton)'),
+                      decoration: InputDecoration(labelText: 'Stok minimum (${r.product.unit == 'rit' ? 'Rit' : 'Ton'})'),
                     ),
                     actions: [
                       TextButton(onPressed: () => Navigator.pop(c), child: const Text('Batal')),

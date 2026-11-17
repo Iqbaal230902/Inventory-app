@@ -41,7 +41,11 @@ Inventory-app/
 | 12 | Profil Perusahaan & Aturan | `/settings/company` | Owner, Admin |
 | 13 | Printer Bluetooth | `/settings/printer` | Owner, Admin, Operator |
 
-Data awal: **1 gudang** (Gudang A, `GDA`) dan **4 jenis pasir silika**: Mesh 4/8, 8/14, 14/20, 20/40.
+Data awal: **1 gudang** (Gudang A, `GDA`) dan **4 jenis pasir silika**: Mesh 4/8, 8/14, 14/20, 20/40 (stok dalam ton),
+plus **Bahan Baku Mentah** (`BBM`, pasir sebelum digiling) yang dihitung **per truk** (1 rit = 1 truk, tanpa tonase).
+Truk yang masuk dicatat lewat **+ Transaksi → Bahan Baku Masuk** (jumlah truk, No. Polisi, sopir, asal — opsional);
+dashboard menampilkan jumlah truk hari ini, bulan ini, dan stok belum diolah (rit). Tidak ikut total stok ton.
+Konversi rit → ton per mesh (produksi/ayakan) menyusul di Fase 2. Form **Masuk – Produksi** (internal) tanpa No. Polisi & sopir.
 Gudang baru ditambah oleh Owner di *Pengaturan → Master Data → Gudang / Lokasi*.
 
 📖 Penjelasan lengkap setiap layar beserta screenshot: **[docs/SCREENS.md](docs/SCREENS.md)**
@@ -131,6 +135,7 @@ ssh iqbal@202.155.91.48 'cd ~/apps/pasir-silika-api && npm ci --no-audit --no-fu
 | FR-01 Auth: JWT 1 jam + refresh token tanpa batas waktu (rotasi; tetap login sampai logout), kunci biometrik (sidik jari / Face ID) setelah app ditinggal ≥ 5 menit, sesi tetap jalan offline, user nonaktif langsung 401, bcrypt, kunci 15 menit setelah 5× gagal | ✅ |
 | FR-02 Dashboard: total & per mesh, hijau/kuning(≤120%)/merah, ringkasan hari ini, auto-refresh 30 dtk, "Data per …" saat offline + efek transaksi lokal | ✅ |
 | FR-03 Masuk/Keluar/Penyesuaian: bruto/tara/netto, kemasan→ton, No. Polisi otomatis, foto ≤500 KB, nomor `SJ/{LOK}/{YYYYMM}/{0001}`, validasi stok negatif (override Owner), peringatan input ganda 15 menit, batas wajar per truk | ✅ |
+| Bahan baku mentah per truk (`IN_RAW`, nomor `BB/{LOK}/{YYYYMM}/{0001}`): jumlah rit (truk) bilangan bulat tanpa tonase, kartu truk masuk hari ini / bulan ini / stok di dashboard & admin panel, penyesuaian & void dalam rit | ✅ |
 | FR-04 Riwayat (infinite scroll, filter, cari), detail + jejak audit, void dengan mutasi pembalik, Admin "ajukan void", kunci H+1, tanpa hapus permanen (dijaga trigger DB) | ✅ |
 | FR-09 Stok minimum per produk per lokasi + banner merah | ✅ (push notif = Fase 2) |
 | FR-10 Surat jalan: printer thermal Bluetooth ESC/POS 58/80 mm, PDF A5, bagikan WhatsApp, QR verifikasi publik, cetak ulang "COPY" + audit | ✅ |

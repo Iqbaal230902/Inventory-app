@@ -52,6 +52,7 @@ void showTrxTypeSheet(BuildContext context, WidgetRef ref) {
               child: Text('Transaksi baru', style: Theme.of(c).textTheme.titleLarge),
             ),
             big('OUT_SALE', 'Barang Keluar', 'Penjualan + surat jalan', Icons.local_shipping_rounded, AppColors.primary),
+            big('IN_RAW', 'Bahan Baku Masuk', 'Truk pasir mentah masuk, dihitung per truk', Icons.terrain_rounded, AppColors.secondary),
             big('IN_PRODUCTION', 'Masuk – Produksi', 'Hasil produksi internal', Icons.factory_rounded, AppColors.tertiary),
             big('IN_SUPPLIER', 'Masuk – Supplier', 'Pembelian dari supplier', Icons.inventory_rounded, AppColors.tertiary),
             if (user?.canAdjust ?? false)

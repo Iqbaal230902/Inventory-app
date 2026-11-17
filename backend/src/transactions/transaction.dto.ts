@@ -20,6 +20,7 @@ const TON_REGEX = /^\d{1,11}([.,]\d{1,3})?$/;
 const TON_MSG = 'harus berupa angka tonase maksimal 3 desimal';
 
 export const INPUT_TRX_TYPES = [
+  'IN_RAW',
   'IN_PRODUCTION',
   'IN_SUPPLIER',
   'OUT_SALE',
@@ -44,7 +45,10 @@ export class TrxItemDto {
   @Matches(TON_REGEX, { message: `qty_ton ${TON_MSG}` })
   qty_ton?: string;
 
-  /** Wajib untuk ADJUSTMENT: 'in' (tambah) atau 'out' (kurang). */
+  /**
+   * Wajib untuk ADJUSTMENT: 'in' (tambah) atau 'out' (kurang).
+   * Untuk produk bersatuan rit (bahan baku mentah), qty_ton berisi jumlah rit.
+   */
   @IsOptional()
   @IsIn(['in', 'out'])
   direction?: 'in' | 'out';

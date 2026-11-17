@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -26,7 +27,7 @@ final _vehiclesProvider = StreamProvider((ref) => ref.watch(masterRepoProvider).
 final _partnersProvider =
     StreamProvider.family<List<Partner>, String>((ref, type) => ref.watch(masterRepoProvider).watchPartners(type));
 
-/// Layar 4/5 — Form Barang Masuk, Keluar & Penyesuaian (FR-03).
+/// Layar 4/5 — Form Barang Masuk, Keluar, Bahan Baku Masuk (per rit) & Penyesuaian (FR-03).
 /// Online: dikirim langsung ke server (validasi stok interaktif).
 /// Offline / jaringan putus: disimpan ke antrian lokal dan disinkronkan otomatis.
 class TrxFormScreen extends ConsumerStatefulWidget {
@@ -48,6 +49,8 @@ class _TrxFormScreenState extends ConsumerState<TrxFormScreen> {
   int? _productId;
   int? _packagingId;
   int? _partnerId;
+  /// Satuan produk terpilih: 'ton' (pasir mesh) atau 'rit' (bahan baku mentah).
+  String _unit = 'ton';
   String _direction = 'in'; // penyesuaian
   bool _useScale = false;
   bool _manualDoc = false;
@@ -67,13 +70,25 @@ class _TrxFormScreenState extends ConsumerState<TrxFormScreen> {
 
   bool get _isOut => _type == 'OUT_SALE';
   bool get _isAdj => _type == 'ADJUSTMENT';
-  bool get _hasPartner => _type == 'OUT_SALE' || _type == 'IN_SUPPLIER';
+  bool get _isRaw => _type == 'IN_RAW';
+  bool get _isRitProduct => _unit == 'rit';
+  bool get _hasPartner => _type == 'OUT_SALE' || _type == 'IN_SUPPLIER' || _type == 'IN_RAW';
+  /// No. Polisi & sopir: tidak untuk penyesuaian dan produksi internal (tanpa truk).
+  bool get _hasVehicle => !_isAdj && _type != 'IN_PRODUCTION';
   bool get _isServerEdit => widget.editServerId != null;
+
+  /// Bahan Baku Masuk hanya produk rit; transaksi pasir hanya produk ton; penyesuaian semua.
+  List<Product> _productChoices(List<Product> all) => switch (_type) {
+        'IN_RAW' => all.where((p) => p.unit == 'rit').toList(),
+        'ADJUSTMENT' => all,
+        _ => all.where((p) => p.unit != 'rit').toList(),
+      };
 
   @override
   void initState() {
     super.initState();
     _useScale = _type == 'OUT_SALE' || _type == 'IN_SUPPLIER';
+    if (_isRaw) _qty.text = '1';
     for (final c in [_gross, _tare, _qty, _pkgQty]) {
       c.addListener(() => setState(() {}));
     }
@@ -114,8 +129,18 @@ class _TrxFormScreenState extends ConsumerState<TrxFormScreen> {
       }
     }
     // Default kemasan: Curah
-    final packs = await ref.read(masterRepoProvider).watchPackaging().first;
+    final repo = ref.read(masterRepoProvider);
+    final packs = await repo.watchPackaging().first;
     _packagingId ??= packs.where((p) => p.isBulk).firstOrNull?.id ?? packs.firstOrNull?.id;
+    // Bahan baku masuk: produk rit pertama sebagai default.
+    final products = await repo.watchProducts().first;
+    if (_isRaw) _productId ??= products.where((p) => p.unit == 'rit').firstOrNull?.id;
+    _unit = products.where((p) => p.id == _productId).firstOrNull?.unit ?? 'ton';
+    if (_isRitProduct) {
+      final q = parseTon(_qty.text);
+      if (q != null) _qty.text = fmtQtyNum(q, 'rit').replaceAll('.', '');
+    }
+    if (!mounted) return;
     setState(() => _loaded = true);
   }
 
@@ -155,7 +180,9 @@ class _TrxFormScreenState extends ConsumerState<TrxFormScreen> {
   }
 
   /// Tonase final transaksi: netto timbangan > jumlah kemasan × ton/kemasan > input ton langsung.
+  /// Untuk produk rit (bahan baku mentah) = jumlah rit.
   Decimal? _computedQty(List<PackagingUnit> packs) {
+    if (_isRitProduct) return parseTon(_qty.text);
     if (_useScale) return _net;
     final pu = _packaging(packs);
     if (pu != null && !pu.isBulk) {
@@ -201,7 +228,9 @@ class _TrxFormScreenState extends ConsumerState<TrxFormScreen> {
   void _onPlateChosen(Vehicle v) {
     _plate.text = formatPlate(v.plateNumber);
     if (_driver.text.isEmpty && v.defaultDriver != null) _driver.text = v.defaultDriver!;
-    if (_tare.text.isEmpty && v.standardTareTon != null) _tare.text = fmtTonStr(v.standardTareTon).replaceAll('.', '');
+    if (_useScale && _tare.text.isEmpty && v.standardTareTon != null) {
+      _tare.text = fmtTonStr(v.standardTareTon).replaceAll('.', '');
+    }
     setState(() {});
   }
 
@@ -215,7 +244,11 @@ class _TrxFormScreenState extends ConsumerState<TrxFormScreen> {
     final locs = ref.read(locationsProvider).value ?? const [];
     final qty = _computedQty(packs);
     if (qty == null || qty <= Decimal.zero) {
-      showSnack(context, 'Netto/jumlah harus lebih dari 0.', error: true);
+      showSnack(context, _isRitProduct ? 'Jumlah rit harus lebih dari 0.' : 'Netto/jumlah harus lebih dari 0.', error: true);
+      return;
+    }
+    if (_isRitProduct && qty != qty.truncate()) {
+      showSnack(context, 'Jumlah rit harus bilangan bulat (1 rit = 1 truk).', error: true);
       return;
     }
     final settings = ref.read(settingsProvider).value ?? const {};
@@ -227,7 +260,7 @@ class _TrxFormScreenState extends ConsumerState<TrxFormScreen> {
 
     // 1. Batas wajar per truk (mis. salah ketik 159 vs 15,9)
     final maxTon = Decimal.tryParse(settings['max_net_ton_per_trx'] ?? '60') ?? Decimal.fromInt(60);
-    if (!_isAdj && maxTon > Decimal.zero && qty > maxTon) {
+    if (!_isAdj && !_isRitProduct && maxTon > Decimal.zero && qty > maxTon) {
       final ok = await confirmDialog(context,
           title: 'Tonase tidak wajar?',
           message: 'Netto ${fmtTon(qty)} Ton melebihi batas wajar ${fmtTon(maxTon, decimals: 0)} Ton per transaksi. '
@@ -258,14 +291,14 @@ class _TrxFormScreenState extends ConsumerState<TrxFormScreen> {
         if (online && user.isOwner) {
           negativeReason = await promptText(context,
               title: 'Stok tidak cukup',
-              label: 'Stok tercatat ${fmtTon(avail)} Ton. Alasan mengizinkan stok negatif',
+              label: 'Stok tercatat ${fmtQty(avail, _unit)}. Alasan mengizinkan stok negatif',
               ok: 'Izinkan');
           if (negativeReason == null) return;
           allowNegative = true;
         } else if (!online) {
           final ok = await confirmDialog(context,
               title: 'Stok tercatat tidak cukup',
-              message: 'Stok tercatat di HP ${fmtTon(avail)} Ton. Transaksi tetap disimpan dan akan ditandai '
+              message: 'Stok tercatat di HP ${fmtQty(avail, _unit)}. Transaksi tetap disimpan dan akan ditandai '
                   'untuk ditinjau Admin/Owner setelah sinkron. Lanjutkan?',
               ok: 'Simpan');
           if (!ok) return;
@@ -275,7 +308,7 @@ class _TrxFormScreenState extends ConsumerState<TrxFormScreen> {
     }
 
     final product = products.firstWhere((p) => p.id == _productId);
-    final pu = _packaging(packs);
+    final pu = _isRitProduct ? null : _packaging(packs); // rit tanpa kemasan
     final location = locs.firstWhere((l) => l.id == _locationId, orElse: () => locs.first);
     final nowUtc = DateTime.now().toUtc();
     final item = <String, dynamic>{
@@ -291,10 +324,10 @@ class _TrxFormScreenState extends ConsumerState<TrxFormScreen> {
       'location_id': location.id,
       if (_partnerId != null) 'partner_id': _partnerId,
       if (_hasPartner && _partnerName.text.trim().isNotEmpty) 'partner_name': _partnerName.text.trim(),
-      if (plate.isNotEmpty) 'plate_number': plate,
-      if (_driver.text.trim().isNotEmpty) 'driver_name': _driver.text.trim(),
-      if (_useScale) 'gross_ton': tonApi(parseTon(_gross.text)!),
-      if (_useScale) 'tare_ton': tonApi(parseTon(_tare.text)!),
+      if (_hasVehicle && plate.isNotEmpty) 'plate_number': plate,
+      if (_hasVehicle && _driver.text.trim().isNotEmpty) 'driver_name': _driver.text.trim(),
+      if (_useScale && !_isRitProduct) 'gross_ton': tonApi(parseTon(_gross.text)!),
+      if (_useScale && !_isRitProduct) 'tare_ton': tonApi(parseTon(_tare.text)!),
       'trx_at': _trxAt.toUtc().toIso8601String(),
       'client_created_at': nowUtc.toIso8601String(),
       if (_manualDoc && _manualDocNo.text.trim().isNotEmpty) 'manual_doc_no': _manualDocNo.text.trim(),
@@ -345,7 +378,8 @@ class _TrxFormScreenState extends ConsumerState<TrxFormScreen> {
 
   Map<String, dynamic> _buildView(Map<String, dynamic> payload, AppUser user, Location loc, Product product,
       PackagingUnit? pu, String? partnerAddr, Decimal qty) {
-    final net = _useScale ? _net : null;
+    final net = _useScale && !_isRitProduct ? _net : null;
+    final rit = product.unit == 'rit';
     return {
       'id': null,
       'client_uuid': payload['client_uuid'],
@@ -362,7 +396,8 @@ class _TrxFormScreenState extends ConsumerState<TrxFormScreen> {
       'gross_ton': payload['gross_ton'],
       'tare_ton': payload['tare_ton'],
       'net_ton': net == null ? null : tonApi(net),
-      'total_ton': tonApi(qty),
+      'total_ton': tonApi(rit ? Decimal.zero : qty),
+      'total_rit': rit ? qty.toString() : '0',
       'trx_at': payload['trx_at'],
       'notes': payload['notes'],
       'print_count': 0,
@@ -378,6 +413,7 @@ class _TrxFormScreenState extends ConsumerState<TrxFormScreen> {
           'packaging_name': pu?.name,
           'package_qty': (payload['items'] as List).first['package_qty'],
           'qty_ton': tonApi(qty),
+          'unit': product.unit,
         }
       ],
     };
@@ -491,6 +527,7 @@ class _TrxFormScreenState extends ConsumerState<TrxFormScreen> {
     final products = ref.watch(_productsProvider).value ?? const <Product>[];
     final packs = ref.watch(_packagingProvider).value ?? const <PackagingUnit>[];
     final vehicles = ref.watch(_vehiclesProvider).value ?? const <Vehicle>[];
+    final choices = _productChoices(products);
     final partners = _hasPartner
         ? (ref.watch(_partnersProvider(_isOut ? 'customer' : 'supplier')).value ?? const <Partner>[])
         : const <Partner>[];
@@ -504,12 +541,14 @@ class _TrxFormScreenState extends ConsumerState<TrxFormScreen> {
         : (widget.editLocalUuid != null ? 'Perbaiki Transaksi' : (trxTypeLabels[_type] ?? 'Transaksi'));
 
     if (!_loaded) return Scaffold(appBar: AppBar(title: Text(title)), body: const Center(child: CircularProgressIndicator()));
-    if (products.isEmpty || locs.isEmpty) {
+    if (choices.isEmpty || locs.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: Text(title)),
-        body: const EmptyState(
+        body: EmptyState(
             icon: Icons.cloud_download_outlined,
-            message: 'Master data belum tersedia di HP ini. Sambungkan ke internet dan lakukan sinkron terlebih dahulu.'),
+            message: _isRaw
+                ? 'Data bahan baku belum tersedia di HP ini. Sambungkan ke internet dan lakukan sinkron terlebih dahulu.'
+                : 'Master data belum tersedia di HP ini. Sambungkan ke internet dan lakukan sinkron terlebih dahulu.'),
       );
     }
 
@@ -559,24 +598,44 @@ class _TrxFormScreenState extends ConsumerState<TrxFormScreen> {
               const SizedBox(height: 12),
             ],
             DropdownButtonFormField<int>(
-              initialValue: _productId,
-              decoration: const InputDecoration(labelText: 'Produk / Mesh'),
-              items: products.map((p) => DropdownMenuItem(value: p.id, child: Text(p.name))).toList(),
-              onChanged: (v) => setState(() => _productId = v),
+              initialValue: choices.any((p) => p.id == _productId) ? _productId : null,
+              decoration: InputDecoration(labelText: _isRaw ? 'Bahan baku' : 'Produk / Mesh'),
+              items: choices
+                  .map((p) => DropdownMenuItem(value: p.id, child: Text(p.unit == 'rit' && _isAdj ? '${p.name} (rit)' : p.name)))
+                  .toList(),
+              onChanged: (v) => setState(() {
+                _productId = v;
+                final unit = products.where((p) => p.id == v).firstOrNull?.unit ?? 'ton';
+                if (unit != _unit) _qty.clear();
+                _unit = unit;
+              }),
               validator: (v) => v == null ? 'Pilih produk' : null,
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<int>(
-              initialValue: _packagingId,
-              decoration: const InputDecoration(labelText: 'Kemasan'),
-              items: packs
-                  .map((p) => DropdownMenuItem(
-                      value: p.id, child: Text(p.isBulk ? p.name : '${p.name} (${fmtTonStr(p.tonPerUnit)} Ton)')))
-                  .toList(),
-              onChanged: (v) => setState(() => _packagingId = v),
-            ),
-            const SizedBox(height: 12),
+            if (!_isRitProduct) ...[
+              DropdownButtonFormField<int>(
+                initialValue: _packagingId,
+                decoration: const InputDecoration(labelText: 'Kemasan'),
+                items: packs
+                    .map((p) => DropdownMenuItem(
+                        value: p.id, child: Text(p.isBulk ? p.name : '${p.name} (${fmtTonStr(p.tonPerUnit)} Ton)')))
+                    .toList(),
+                onChanged: (v) => setState(() => _packagingId = v),
+              ),
+              const SizedBox(height: 12),
+            ],
 
+            // ---- Jumlah rit (bahan baku mentah, dihitung per truk) ----
+            if (_isRitProduct) ...[
+              _ritField(),
+              if (_isRaw)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6, left: 4),
+                  child: Text('Dihitung per truk yang masuk (1 rit = 1 truk), tanpa tonase.',
+                      style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                ),
+              const SizedBox(height: 16),
+            ] else ...[
             // ---- Berat ----
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
@@ -603,19 +662,20 @@ class _TrxFormScreenState extends ConsumerState<TrxFormScreen> {
             ] else
               _tonField(_qty, 'Jumlah (Ton)', required: true),
             const SizedBox(height: 16),
+            ],
 
             // ---- Pihak & kendaraan ----
             if (_hasPartner) ...[
               _PartnerField(
                 controller: _partnerName,
                 partners: partners,
-                label: _isOut ? 'Pelanggan' : 'Supplier',
+                label: _isOut ? 'Pelanggan' : (_isRaw ? 'Asal tambang / Supplier (opsional)' : 'Supplier'),
                 onSelected: (p) => setState(() => _partnerId = p?.id),
                 required: _isOut,
               ),
               const SizedBox(height: 12),
             ],
-            if (!_isAdj) ...[
+            if (_hasVehicle) ...[
               Autocomplete<Vehicle>(
                 initialValue: TextEditingValue(text: _plate.text),
                 optionsBuilder: (v) {
@@ -686,7 +746,7 @@ class _TrxFormScreenState extends ConsumerState<TrxFormScreen> {
             icon: _busy
                 ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.5))
                 : const Icon(Icons.save),
-            label: Text(qty != null && qty > Decimal.zero ? 'Simpan · ${fmtTon(qty)} Ton' : 'Simpan'),
+            label: Text(qty != null && qty > Decimal.zero ? 'Simpan · ${fmtQty(qty, _unit)}' : 'Simpan'),
           ),
         ),
       ),
@@ -708,6 +768,37 @@ class _TrxFormScreenState extends ConsumerState<TrxFormScreen> {
         },
       );
 
+  /// Jumlah rit (1 rit = 1 truk): bilangan bulat dengan tombol − / +.
+  Widget _ritField() {
+    void bump(int d) {
+      final cur = int.tryParse(_qty.text) ?? 0;
+      _qty.text = '${(cur + d).clamp(1, 999)}';
+    }
+
+    return Row(children: [
+      IconButton.filledTonal(onPressed: () => bump(-1), icon: const Icon(Icons.remove), iconSize: 28),
+      const SizedBox(width: 12),
+      Expanded(
+        child: TextFormField(
+          controller: _qty,
+          textAlign: TextAlign.center,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(3)],
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+          decoration: const InputDecoration(labelText: 'Jumlah truk (rit)', suffixText: 'Rit'),
+          validator: (v) {
+            final n = int.tryParse(v ?? '');
+            if (n == null) return 'Wajib diisi';
+            if (n <= 0) return 'Harus > 0';
+            return null;
+          },
+        ),
+      ),
+      const SizedBox(width: 12),
+      IconButton.filledTonal(onPressed: () => bump(1), icon: const Icon(Icons.add), iconSize: 28),
+    ]);
+  }
+
   Widget _photoTile() => Card(
         child: ListTile(
           leading: _photoPath == null
@@ -715,7 +806,7 @@ class _TrxFormScreenState extends ConsumerState<TrxFormScreen> {
               : ClipRRect(
                   borderRadius: BorderRadius.circular(6),
                   child: Image.file(File(_photoPath!), width: 48, height: 48, fit: BoxFit.cover)),
-          title: Text(_photoPath == null ? 'Foto tiket timbangan / bak truk' : 'Foto terlampir'),
+          title: Text(_photoPath == null ? (_isRaw ? 'Foto truk / muatan' : 'Foto tiket timbangan / bak truk') : 'Foto terlampir'),
           subtitle: const Text('Opsional · dikompres maks. 500 KB'),
           trailing: _photoPath == null
               ? null

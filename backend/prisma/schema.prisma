@@ -101,12 +101,20 @@ enum ProductCategory {
   byproduct
 }
 
+/// Satuan stok produk. Pasir mesh dalam ton; bahan baku mentah dalam rit (1 rit = 1 truk, tanpa tonase).
+/// Untuk produk `rit`, kolom qty_ton di item/ledger/saldo berisi jumlah rit.
+enum StockUnit {
+  ton
+  rit
+}
+
 model Product {
   id           Int             @id @default(autoincrement()) @db.UnsignedInt
   code         String          @unique @db.VarChar(20)
   name         String          @db.VarChar(100)
   meshSize     String?         @map("mesh_size") @db.VarChar(20)
   category     ProductCategory
+  unit         StockUnit       @default(ton)
   densityTonM3 Decimal?        @default(1.600) @map("density_ton_m3") @db.Decimal(6, 3)
   sortOrder    Int             @default(0) @map("sort_order") @db.SmallInt
   isActive     Boolean         @default(true) @map("is_active")
@@ -183,6 +191,7 @@ model StockMinLevel {
 // ===== Transaksi =====
 
 enum TrxType {
+  IN_RAW
   IN_PRODUCTION
   IN_SUPPLIER
   OUT_SALE

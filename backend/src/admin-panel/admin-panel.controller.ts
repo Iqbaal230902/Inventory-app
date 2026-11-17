@@ -41,7 +41,13 @@ import {
   ymd,
 } from './view-engine';
 
-const INPUT_TYPES = ['OUT_SALE', 'IN_PRODUCTION', 'IN_SUPPLIER', 'ADJUSTMENT'];
+const INPUT_TYPES = [
+  'OUT_SALE',
+  'IN_RAW',
+  'IN_PRODUCTION',
+  'IN_SUPPLIER',
+  'ADJUSTMENT',
+];
 
 interface TrxQuery {
   date_from?: string;
@@ -292,6 +298,8 @@ export class AdminPanelController {
       {
         code: string;
         name: string;
+        unit: 'ton' | 'rit';
+        in_raw: unknown;
         in_prod: unknown;
         in_supp: unknown;
         out_sale: unknown;
@@ -299,7 +307,8 @@ export class AdminPanelController {
         adj_out: unknown;
       }[]
     >`
-      SELECT p.code, p.name,
+      SELECT p.code, p.name, p.unit,
+        SUM(CASE WHEN t.trx_type='IN_RAW' THEN i.qty_ton ELSE 0 END) AS in_raw,
         SUM(CASE WHEN t.trx_type='IN_PRODUCTION' THEN i.qty_ton ELSE 0 END) AS in_prod,
         SUM(CASE WHEN t.trx_type='IN_SUPPLIER' THEN i.qty_ton ELSE 0 END) AS in_supp,
         SUM(CASE WHEN t.trx_type='OUT_SALE' THEN i.qty_ton ELSE 0 END) AS out_sale,
@@ -309,7 +318,7 @@ export class AdminPanelController {
       JOIN transaction_items i ON i.transaction_id = t.id
       JOIN products p ON p.id = i.product_id
       WHERE ${base}
-      GROUP BY p.id, p.code, p.name, p.sort_order
+      GROUP BY p.id, p.code, p.name, p.unit, p.sort_order
       ORDER BY p.sort_order, p.id`;
 
     const perCustomer = await this.prisma.$queryRaw<
@@ -325,9 +334,16 @@ export class AdminPanelController {
       LIMIT 100`;
 
     const perDay = await this.prisma.$queryRaw<
-      { day: string; in_ton: unknown; out_ton: unknown; trips: bigint }[]
+      {
+        day: string;
+        in_rit: unknown;
+        in_ton: unknown;
+        out_ton: unknown;
+        trips: bigint;
+      }[]
     >`
       SELECT DATE_FORMAT(CONVERT_TZ(t.trx_at, '+00:00', '+07:00'), '%Y-%m-%d') AS day,
+        SUM(CASE WHEN t.trx_type = 'IN_RAW' THEN i.qty_ton ELSE 0 END) AS in_rit,
         SUM(CASE WHEN t.trx_type IN ('IN_PRODUCTION','IN_SUPPLIER') THEN i.qty_ton ELSE 0 END) AS in_ton,
         SUM(CASE WHEN t.trx_type = 'OUT_SALE' THEN i.qty_ton ELSE 0 END) AS out_ton,
         COUNT(DISTINCT CASE WHEN t.trx_type = 'OUT_SALE' THEN t.id END) AS trips
@@ -339,14 +355,19 @@ export class AdminPanelController {
 
     let tIn = dec(0);
     let tOut = dec(0);
+    let tRaw = dec(0);
     const products = perProduct.map((r) => {
-      const inTon = dec(String(r.in_prod)).plus(dec(String(r.in_supp)));
-      const outTon = dec(String(r.out_sale));
-      tIn = tIn.plus(inTon);
-      tOut = tOut.plus(outTon);
+      if (r.unit === 'rit') {
+        tRaw = tRaw.plus(dec(String(r.in_raw)));
+      } else {
+        tIn = tIn.plus(dec(String(r.in_prod)).plus(dec(String(r.in_supp))));
+        tOut = tOut.plus(dec(String(r.out_sale)));
+      }
       return {
         code: r.code,
         name: r.name,
+        unit: r.unit,
+        in_raw: String(r.in_raw),
         in_prod: String(r.in_prod),
         in_supp: String(r.in_supp),
         out_sale: String(r.out_sale),
@@ -371,11 +392,13 @@ export class AdminPanelController {
       })),
       days: perDay.map((r) => ({
         day: r.day.split('-').reverse().join('/'),
+        in_rit: String(r.in_rit),
         in_ton: String(r.in_ton),
         out_ton: String(r.out_ton),
         trips: Number(r.trips),
       })),
       totalIn: tIn.toFixed(3),
+      totalRaw: tRaw.toString(),
       totalOut: tOut.toFixed(3),
       trips,
       csvUrl: withQuery(
@@ -448,7 +471,8 @@ export class AdminPanelController {
       'Sopir',
       'Produk',
       'Arah',
-      'Ton',
+      'Jumlah',
+      'Satuan',
       'Bruto',
       'Tara',
       'Netto',
@@ -471,7 +495,10 @@ export class AdminPanelController {
             t.driverName,
             i.product?.name,
             i.direction === 'in' ? 'Masuk' : 'Keluar',
-            num(i.qtyTon),
+            i.product?.unit === 'rit'
+              ? dec(str(i.qtyTon)).toString()
+              : num(i.qtyTon),
+            i.product?.unit === 'rit' ? 'Rit' : 'Ton',
             num(t.grossTon),
             num(t.tareTon),
             num(t.netTon),

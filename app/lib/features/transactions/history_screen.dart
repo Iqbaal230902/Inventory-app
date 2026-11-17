@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -123,7 +124,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         !(t.partnerName ?? '').toLowerCase().contains(q)) {
       return false;
     }
-    if (_type == 'in' && !t.trxType.startsWith('IN_')) return false;
+    if (_type == 'in' && t.trxType != 'IN_PRODUCTION' && t.trxType != 'IN_SUPPLIER') return false;
     if (_type == 'out' && t.trxType != 'OUT_SALE') return false;
     if (_type != null && _type != 'in' && _type != 'out' && t.trxType != _type) return false;
     if (_productId != null && !t.items.any((i) => i.productId == _productId)) return false;
@@ -206,7 +207,13 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                       _pickRange();
                     }
                   }),
-                  for (final (k, l) in [('out', 'Keluar'), ('in', 'Masuk'), ('ADJUSTMENT', 'Penyesuaian'), ('VOID', 'Void')])
+                  for (final (k, l) in [
+                    ('out', 'Keluar'),
+                    ('in', 'Masuk'),
+                    ('IN_RAW', 'Bahan baku'),
+                    ('ADJUSTMENT', 'Penyesuaian'),
+                    ('VOID', 'Void'),
+                  ])
                     chip(l, _type == k, () {
                       setState(() => _type = _type == k ? null : k);
                       _reload();
@@ -288,6 +295,10 @@ class TrxTile extends StatelessWidget {
       _ => (Icons.swap_vert_rounded, AppColors.secondary),
     };
     final product = t.items.map((i) => i.productName).toSet().join(', ');
+    // Bahan baku mentah dicatat per rit; pasir mesh dalam ton.
+    final amount = t.totalRit != Decimal.zero && t.totalTon == Decimal.zero
+        ? '${fmtQtyNum(t.totalRit, 'rit')} Rit'
+        : '${fmtTon(t.totalTon)} T';
     final key = t.local != null ? t.clientUuid : 's${t.id}';
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
@@ -297,7 +308,7 @@ class TrxTile extends StatelessWidget {
         leading: IconCircle(icon, color: color, size: 42, filled: false),
         title: Row(children: [
           Expanded(child: Text(t.docNo, style: const TextStyle(fontWeight: FontWeight.w700), overflow: TextOverflow.ellipsis)),
-          Text('${t.direction == 'out' ? '−' : t.direction == 'in' ? '+' : '±'}${fmtTon(t.totalTon)} T',
+          Text('${t.direction == 'out' ? '−' : t.direction == 'in' ? '+' : '±'}$amount',
               style: TextStyle(fontWeight: FontWeight.w800, color: color)),
         ]),
         subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

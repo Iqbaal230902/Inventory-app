@@ -20,6 +20,19 @@ export function ton(
   return dec(v).toFixed(3);
 }
 
+/** Format jumlah sesuai satuan produk untuk pesan: "12,500 Ton" / "3 Rit". */
+export function qtyId(
+  v: Decimal.Value | Prisma.Decimal,
+  unit: 'ton' | 'rit' = 'ton',
+): string {
+  if (unit === 'rit') {
+    const s = dec(v).toDecimalPlaces(3).toString();
+    const [i, f] = s.split('.');
+    return `${i.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}${f ? `,${f}` : ''} Rit`;
+  }
+  return `${tonId(v)} Ton`;
+}
+
 /** Format Indonesia untuk pesan error: 12,500 */
 export function tonId(v: Decimal.Value | Prisma.Decimal): string {
   const [i, f] = dec(v).toFixed(3).split('.');

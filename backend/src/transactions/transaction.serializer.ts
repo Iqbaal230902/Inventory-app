@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import { ton } from '../common/decimal';
+import { dec, ton } from '../common/decimal';
 
 export const TRX_INCLUDE = {
   location: true,
@@ -19,11 +19,21 @@ export type TrxWithRelations = Prisma.TransactionGetPayload<{
   include: typeof TRX_INCLUDE;
 }>;
 
-/** Bentuk JSON transaksi untuk API (snake_case, tonase string 3 desimal). */
+/** Jumlah rit sebagai string tanpa nol di belakang ("3", "12"). */
+export const ritStr = (v: Prisma.Decimal | string | number) =>
+  dec(v).toDecimalPlaces(3).toString();
+
+/**
+ * Bentuk JSON transaksi untuk API (snake_case, tonase string 3 desimal).
+ * Item bersatuan rit (bahan baku mentah): qty_ton berisi jumlah rit, `unit` = 'rit';
+ * total_ton hanya menjumlah item ton, total_rit menjumlah item rit.
+ */
 export function serializeTrx(
   t: TrxWithRelations,
   extra: Record<string, unknown> = {},
 ) {
+  const items = t.items.filter((i) => !i.supersededAt);
+  const isRit = (i: (typeof items)[number]) => i.product?.unit === 'rit';
   return {
     id: Number(t.id),
     client_uuid: t.clientUuid,
@@ -55,8 +65,13 @@ export function serializeTrx(
     tare_ton: ton(t.tareTon),
     net_ton: ton(t.netTon),
     total_ton: ton(
-      t.items
-        .filter((i) => !i.supersededAt)
+      items
+        .filter((i) => !isRit(i))
+        .reduce((s, i) => s.plus(i.qtyTon), new Prisma.Decimal(0)),
+    ),
+    total_rit: ritStr(
+      items
+        .filter(isRit)
         .reduce((s, i) => s.plus(i.qtyTon), new Prisma.Decimal(0)),
     ),
     trx_at: t.trxAt.toISOString(),
@@ -79,20 +94,19 @@ export function serializeTrx(
       t.referencedBy
         .filter((r) => r.trxType === 'VOID')
         .map((r) => ({ ...r, id: Number(r.id) }))[0] ?? null,
-    items: t.items
-      .filter((i) => !i.supersededAt)
-      .map((i) => ({
-        id: Number(i.id),
-        product_id: i.productId,
-        product_code: i.product?.code ?? null,
-        product_name: i.product?.name ?? null,
-        line_role: i.lineRole,
-        direction: i.direction,
-        packaging_unit_id: i.packagingUnitId,
-        packaging_name: i.packagingUnit?.name ?? null,
-        package_qty: i.packageQty?.toFixed(2) ?? null,
-        qty_ton: ton(i.qtyTon),
-      })),
+    items: items.map((i) => ({
+      id: Number(i.id),
+      product_id: i.productId,
+      product_code: i.product?.code ?? null,
+      product_name: i.product?.name ?? null,
+      line_role: i.lineRole,
+      direction: i.direction,
+      packaging_unit_id: i.packagingUnitId,
+      packaging_name: i.packagingUnit?.name ?? null,
+      package_qty: i.packageQty?.toFixed(2) ?? null,
+      qty_ton: ton(i.qtyTon),
+      unit: i.product?.unit ?? 'ton',
+    })),
     ...extra,
   };
 }

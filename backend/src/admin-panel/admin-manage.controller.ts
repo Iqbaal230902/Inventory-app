@@ -129,8 +129,8 @@ const SPECS: EntitySpec[] = [
     title: 'Produk (Jenis Pasir)',
     singular: 'Produk',
     canCreate: false,
-    note: 'Jenis pasir dibatasi 4 mesh (4/8, 8/14, 14/20, 20/40). Produk bisa diubah atau dinonaktifkan, tidak ditambah dari sini.',
-    columns: ['Kode', 'Nama', 'Mesh', 'Kategori', 'Urutan', 'Status'],
+    note: 'Jenis pasir dibatasi 4 mesh (4/8, 8/14, 14/20, 20/40) dalam ton, ditambah Bahan Baku Mentah yang dihitung per truk (1 rit = 1 truk). Produk bisa diubah atau dinonaktifkan, tidak ditambah dari sini.',
+    columns: ['Kode', 'Nama', 'Mesh', 'Kategori', 'Satuan', 'Urutan', 'Status'],
     fields: [
       { name: 'code', label: 'Kode', required: true, readonlyOnEdit: true },
       { name: 'name', label: 'Nama', required: true },
@@ -154,6 +154,7 @@ const SPECS: EntitySpec[] = [
       r.name,
       r.meshSize ?? '',
       label(CATEGORY, r.category),
+      r.unit === 'rit' ? 'Rit' : 'Ton',
       r.sortOrder,
       yesNo(r.isActive),
     ],

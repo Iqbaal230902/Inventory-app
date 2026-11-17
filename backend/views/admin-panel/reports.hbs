@@ -15,17 +15,19 @@
 <p class="muted">Periode {{from}} s/d {{to}} (WIB). Transaksi yang di-void tidak dihitung.</p>
 
 <div class="grid g4" style="margin-bottom:18px">
-  <div class="stat"><small>Total masuk</small><b>{{ton totalIn}}</b></div>
+  <div class="stat"><small>Total masuk pasir (ton)</small><b>{{ton totalIn}}</b></div>
+  <div class="stat"><small>Truk bahan baku masuk</small><b>{{totalRaw}} <small style="display:inline">Rit</small></b></div>
   <div class="stat"><small>Total keluar (penjualan)</small><b>{{ton totalOut}}</b></div>
   <div class="stat"><small>Jumlah ritase keluar</small><b>{{trips}}</b></div>
 </div>
 
 <div class="card">
-  <h2>Mutasi per jenis pasir (Ton)</h2>
+  <h2>Mutasi per produk</h2>
+  <p class="muted" style="margin-top:-6px">Pasir mesh dalam ton; bahan baku mentah dalam rit (1 rit = 1 truk).</p>
   {{#if products.length}}
   <div class="tbl-wrap"><table>
-    <tr><th>Kode</th><th>Produk</th><th class="n">Masuk produksi</th><th class="n">Masuk supplier</th><th class="n">Keluar (jual)</th><th class="n">Penyesuaian (±)</th></tr>
-    {{#each products}}<tr><td>{{code}}</td><td>{{name}}</td><td class="n">{{ton in_prod}}</td><td class="n">{{ton in_supp}}</td><td class="n">{{ton out_sale}}</td><td class="n">{{ton adj}}</td></tr>{{/each}}
+    <tr><th>Kode</th><th>Produk</th><th class="n">Bahan baku masuk</th><th class="n">Masuk produksi</th><th class="n">Masuk supplier</th><th class="n">Keluar (jual)</th><th class="n">Penyesuaian (±)</th></tr>
+    {{#each products}}<tr><td>{{code}}</td><td>{{name}}</td><td class="n">{{#if (eq unit "rit")}}{{qty in_raw unit}}{{else}}–{{/if}}</td><td class="n">{{#if (eq unit "rit")}}–{{else}}{{ton in_prod}}{{/if}}</td><td class="n">{{#if (eq unit "rit")}}–{{else}}{{ton in_supp}}{{/if}}</td><td class="n">{{#if (eq unit "rit")}}–{{else}}{{ton out_sale}}{{/if}}</td><td class="n">{{qty adj unit}}</td></tr>{{/each}}
   </table></div>
   {{else}}<div class="empty">Tidak ada transaksi pada periode ini.</div>{{/if}}
 </div>
@@ -44,8 +46,8 @@
     <h2>Harian</h2>
     {{#if days.length}}
     <div class="tbl-wrap"><table>
-      <tr><th>Tanggal</th><th class="n">Masuk</th><th class="n">Keluar</th><th class="n">Ritase</th></tr>
-      {{#each days}}<tr><td>{{day}}</td><td class="n">{{ton in_ton}}</td><td class="n">{{ton out_ton}}</td><td class="n">{{trips}}</td></tr>{{/each}}
+      <tr><th>Tanggal</th><th class="n">Truk bahan baku (rit)</th><th class="n">Masuk (ton)</th><th class="n">Keluar (ton)</th><th class="n">Ritase keluar</th></tr>
+      {{#each days}}<tr><td>{{day}}</td><td class="n">{{#if (gt0 in_rit)}}{{qty in_rit "rit"}}{{else}}–{{/if}}</td><td class="n">{{ton in_ton}}</td><td class="n">{{ton out_ton}}</td><td class="n">{{trips}}</td></tr>{{/each}}
     </table></div>
     {{else}}<div class="empty">Tidak ada data.</div>{{/if}}
   </div>

@@ -146,6 +146,7 @@ export class SyncController {
         name: p.name,
         mesh_size: p.meshSize,
         category: p.category,
+        unit: p.unit,
         density_ton_m3: p.densityTonM3?.toFixed(3) ?? null,
         sort_order: p.sortOrder,
         is_active: p.isActive,

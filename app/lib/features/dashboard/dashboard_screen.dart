@@ -89,17 +89,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
                 children: [
                   if (locs.length > 1 && user?.role != 'operator') _LocationPicker(locs: locs, selected: selected),
-                  _TotalCard(total: d.total, rows: d.rows),
+                  _TotalCard(total: d.total, rows: d.tonRows),
                   const SizedBox(height: 14),
+                  if (d.ritRows.isNotEmpty) ...[
+                    _RawCard(rows: d.ritRows),
+                    const SizedBox(height: 14),
+                  ],
                   const _TodayCard(),
                   if (d.alerts.isNotEmpty) _AlertsCard(alerts: d.alerts),
                   SectionTitle('Stok per varian'),
-                  if (d.rows.isEmpty)
+                  if (d.tonRows.isEmpty)
                     const EmptyState(icon: Icons.inventory_2_outlined, message: 'Belum ada data produk. Tarik ke bawah untuk sinkron.')
                   else
-                    ...d.rows.map((r) => Padding(
+                    ...d.tonRows.map((r) => Padding(
                           padding: const EdgeInsets.only(bottom: 12),
-                          child: _StockCard(row: r, maxQty: d.rows.fold(Decimal.one, (m, x) => x.qty > m ? x.qty : m)),
+                          child: _StockCard(row: r, maxQty: d.tonRows.fold(Decimal.one, (m, x) => x.qty > m ? x.qty : m)),
                         )),
                 ],
               ),
@@ -154,7 +158,7 @@ class _TotalCard extends ConsumerWidget {
         Row(children: [
           const IconCircle(Icons.inventory_2_rounded, color: Colors.white24, size: 36),
           const SizedBox(width: 10),
-          Text('Total stok', style: TextStyle(color: on.withValues(alpha: 0.9), fontWeight: FontWeight.w600)),
+          Text('Total stok pasir', style: TextStyle(color: on.withValues(alpha: 0.9), fontWeight: FontWeight.w600)),
         ]),
         const SizedBox(height: 14),
         Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
@@ -254,9 +258,77 @@ class _TodayCard extends ConsumerWidget {
   }
 }
 
+/// Bahan baku mentah (pasir sebelum diolah) — dihitung per truk (1 rit = 1 truk), tanpa tonase.
+class _RawCard extends ConsumerWidget {
+  const _RawCard({required this.rows});
+  final List<StockRow> rows;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cs = Theme.of(context).colorScheme;
+    final user = ref.watch(currentUserProvider);
+    final raw = (ref.watch(todaySummaryProvider).value?['raw'] as Map?)?.cast<String, dynamic>();
+    final qty = rows.fold(Decimal.zero, (s, r) => s + r.qty);
+    final localDelta = rows.fold(Decimal.zero, (s, r) => s + r.localDelta);
+    String count(String key) => raw == null ? '-' : fmtQtyNum(dec(raw[key] as String?), 'rit');
+    const color = AppColors.secondary;
+
+    Widget stat(String label, String value) => Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
+              Text(value, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -0.5)),
+              const SizedBox(width: 4),
+              Text('Rit', style: TextStyle(color: cs.onSurfaceVariant, fontWeight: FontWeight.w600)),
+            ]),
+            Text(label, style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+          ]),
+        );
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            const IconCircle(Icons.terrain_rounded, color: color, size: 42),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('Truk Bahan Baku Masuk', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                Text('Pasir mentah sebelum digiling · 1 rit = 1 truk',
+                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+              ]),
+            ),
+          ]),
+          const SizedBox(height: 16),
+          Row(children: [
+            stat('Hari ini', count('today_in_rit')),
+            stat('Bulan ini', count('month_in_rit')),
+            stat('Stok belum diolah', fmtQtyNum(qty, 'rit')),
+          ]),
+          if (localDelta != Decimal.zero) ...[
+            const SizedBox(height: 8),
+            Text('${localDelta > Decimal.zero ? '+' : ''}${fmtQty(localDelta, 'rit')} belum tersinkron',
+                style: const TextStyle(fontSize: 12, color: AppColors.warning, fontWeight: FontWeight.w700)),
+          ],
+          if (user?.canInput ?? false) ...[
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => context.push('/trx/new/IN_RAW'),
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Catat truk masuk'),
+              ),
+            ),
+          ],
+        ]),
+      ),
+    );
+  }
+}
+
 class _AlertsCard extends StatelessWidget {
   const _AlertsCard({required this.alerts});
-  final List<({String level, String location, String product, Decimal qty, Decimal min})> alerts;
+  final List<StockAlert> alerts;
   @override
   Widget build(BuildContext context) {
     final critical = alerts.where((a) => a.level == 'critical').length;
@@ -278,7 +350,7 @@ class _AlertsCard extends StatelessWidget {
                       dense: true,
                       leading: StatusDot(a.level),
                       title: Text('${a.product} · ${a.location}', style: const TextStyle(fontWeight: FontWeight.w600)),
-                      subtitle: Text('Stok ${fmtTon(a.qty)} Ton · minimum ${fmtTon(a.min)} Ton'),
+                      subtitle: Text('Stok ${fmtQty(a.qty, a.unit)} · minimum ${fmtQty(a.min, a.unit)}'),
                     ))
                 .toList(),
           ),

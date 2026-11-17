@@ -22,13 +22,21 @@ class StockRow {
   final String status;
   final Map<int, Decimal> perLocation;
   Decimal get localDelta => qty - official;
+  bool get isRit => product.unit == 'rit';
 }
+
+typedef StockAlert = ({String level, String location, String product, String unit, Decimal qty, Decimal min});
 
 class DashboardData {
   DashboardData({required this.rows, required this.total, required this.alerts});
+  /// Semua produk (pasir mesh dalam ton + bahan baku mentah dalam rit).
   final List<StockRow> rows;
+  /// Total stok pasir — hanya produk bersatuan ton.
   final Decimal total;
-  final List<({String level, String location, String product, Decimal qty, Decimal min})> alerts;
+  final List<StockAlert> alerts;
+
+  List<StockRow> get tonRows => rows.where((r) => !r.isRit).toList();
+  List<StockRow> get ritRows => rows.where((r) => r.isRit).toList();
 }
 
 /// Hijau aman, kuning ≤ 120% batas minimum, merah di bawah minimum (FR-02).
@@ -66,7 +74,7 @@ final dashboardProvider = Provider<AsyncValue<DashboardData>>((ref) {
   final effects = TrxRepo.effects(local.value!, lastPull);
 
   final rows = <StockRow>[];
-  final alerts = <({String level, String location, String product, Decimal qty, Decimal min})>[];
+  final alerts = <StockAlert>[];
   var total = Decimal.zero;
   const rank = {'ok': 0, 'warning': 1, 'critical': 2};
   for (final p in products.value!) {
@@ -82,14 +90,14 @@ final dashboardProvider = Provider<AsyncValue<DashboardData>>((ref) {
       final st = stockStatus(q, mn);
       if (rank[st]! > rank[worst]!) worst = st;
       if (st != 'ok') {
-        alerts.add((level: st, location: locName[lid] ?? '-', product: p.name, qty: q, min: mn));
+        alerts.add((level: st, location: locName[lid] ?? '-', product: p.name, unit: p.unit, qty: q, min: mn));
       }
       per[lid] = q;
       qty += q;
       official += o;
       min += mn;
     }
-    total += qty;
+    if (p.unit != 'rit') total += qty;
     rows.add(StockRow(product: p, qty: qty, official: official, min: min, status: worst, perLocation: per));
   }
   alerts.sort((a, b) => rank[b.level]!.compareTo(rank[a.level]!));

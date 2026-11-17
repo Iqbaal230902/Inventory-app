@@ -95,7 +95,7 @@ class SyncStatusScreen extends ConsumerWidget {
                   onTap: () => context.push('/trx/${r.clientUuid}'),
                   leading: Icon(rejected ? Icons.error : Icons.schedule,
                       color: rejected ? AppColors.critical : AppColors.warning),
-                  title: Text('${r.tmpDocNo} · ${fmtTon(t.totalTon)} Ton'),
+                  title: Text('${r.tmpDocNo} · ${t.qtyLabel}'),
                   subtitle: Text([
                     '${t.typeLabel} · ${fmtDateTime(r.clientCreatedAt, tz: t.timezone)}',
                     if (rejected) 'Alasan: ${r.errorMessage}',

@@ -106,6 +106,7 @@ export class TransactionsService {
       ).map((u) => [u.id, u.name]),
     );
     const isInput = [
+      'IN_RAW',
       'IN_PRODUCTION',
       'IN_SUPPLIER',
       'OUT_SALE',

@@ -187,7 +187,8 @@ class _DetailBody extends ConsumerWidget {
           child: Column(children: [
             KeyValueRow('Tanggal', fmtDateTime(t.trxAt, tz: t.timezone)),
             KeyValueRow('Lokasi', t.locationName),
-            if (t.partnerName != null) KeyValueRow(t.isOut ? 'Pelanggan' : 'Supplier', t.partnerName),
+            if (t.partnerName != null)
+              KeyValueRow(t.isOut ? 'Pelanggan' : (t.trxType == 'IN_RAW' ? 'Asal / Supplier' : 'Supplier'), t.partnerName),
             if (t.plateNumber != null) KeyValueRow('No. Polisi', formatPlate(t.plateNumber)),
             if (t.driverName != null) KeyValueRow('Sopir', t.driverName),
             if (t.manualDocNo != null) KeyValueRow('No. SJ manual', t.manualDocNo),
@@ -206,11 +207,11 @@ class _DetailBody extends ConsumerWidget {
             child: ListTile(
               title: Text(i.productName, style: const TextStyle(fontWeight: FontWeight.w700)),
               subtitle: Text([
-                i.packagingName ?? 'Curah',
+                i.isRit ? 'Bahan baku mentah · per rit (truk)' : (i.packagingName ?? 'Curah'),
                 if (i.packageQty != null) '× ${fmtTonStr(i.packageQty, decimals: 0)}',
                 if (t.trxType == 'ADJUSTMENT' || t.trxType == 'VOID') (i.direction == 'in' ? 'tambah' : 'kurang'),
               ].join(' ')),
-              trailing: Text('${fmtTon(i.qtyTon)} Ton', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+              trailing: Text(fmtQty(i.qtyTon, i.unit), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
             ),
           )),
       if (t.hasPhoto && t.id != null) _ServerPhoto(id: t.id!),

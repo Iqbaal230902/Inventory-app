@@ -3,7 +3,7 @@ import cookieParser from 'cookie-parser';
 import { existsSync } from 'fs';
 import hbs from 'hbs';
 import { join, resolve } from 'path';
-import { tonId } from '../common/decimal';
+import { qtyId, tonId } from '../common/decimal';
 import { zonedParts } from '../common/time';
 
 /** Folder template: backend/views/admin-panel (berlaku untuk src/ maupun dist/src/). */
@@ -31,6 +31,7 @@ export function str(v: unknown): string {
 }
 
 export const TRX_TYPE_LABEL: Record<string, string> = {
+  IN_RAW: 'Bahan Baku Masuk',
   IN_PRODUCTION: 'Masuk – Produksi',
   IN_SUPPLIER: 'Masuk – Supplier',
   OUT_SALE: 'Barang Keluar',
@@ -103,6 +104,23 @@ export function configureAdminViews(app: NestExpressApplication) {
   h('ton', (v: unknown) =>
     v === null || v === undefined || v === '' ? '–' : tonId(str(v)),
   );
+  // Jumlah sesuai satuan produk: ton → "12,500", rit → "3 Rit".
+  h('qty', (v: unknown, unit?: unknown) =>
+    v === null || v === undefined || v === ''
+      ? '–'
+      : unit === 'rit'
+        ? qtyId(str(v), 'rit')
+        : tonId(str(v)),
+  );
+  // Total transaksi (JSON serializeTrx): "15,900 Ton", "3 Rit", atau keduanya.
+  h('trxQty', (t: { total_ton?: string; total_rit?: string }) => {
+    const parts: string[] = [];
+    const rit = Number(t?.total_rit ?? 0);
+    if (Number(t?.total_ton ?? 0) !== 0 || !rit)
+      parts.push(qtyId(t?.total_ton ?? '0', 'ton'));
+    if (rit) parts.push(qtyId(t.total_rit!, 'rit'));
+    return parts.join(' + ');
+  });
   h('dt', (v: unknown, tz?: unknown) =>
     fmtDateTime(v, typeof tz === 'string' ? tz : undefined),
   );

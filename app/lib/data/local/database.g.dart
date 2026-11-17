@@ -57,6 +57,16 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _unitMeta = const VerificationMeta('unit');
+  @override
+  late final GeneratedColumn<String> unit = GeneratedColumn<String>(
+    'unit',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('ton'),
+  );
   static const VerificationMeta _sortOrderMeta = const VerificationMeta(
     'sortOrder',
   );
@@ -91,6 +101,7 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
     name,
     meshSize,
     category,
+    unit,
     sortOrder,
     isActive,
   ];
@@ -139,6 +150,12 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
     } else if (isInserting) {
       context.missing(_categoryMeta);
     }
+    if (data.containsKey('unit')) {
+      context.handle(
+        _unitMeta,
+        unit.isAcceptableOrUnknown(data['unit']!, _unitMeta),
+      );
+    }
     if (data.containsKey('sort_order')) {
       context.handle(
         _sortOrderMeta,
@@ -180,6 +197,10 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
         DriftSqlType.string,
         data['${effectivePrefix}category'],
       )!,
+      unit: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}unit'],
+      )!,
       sortOrder: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}sort_order'],
@@ -203,6 +224,9 @@ class Product extends DataClass implements Insertable<Product> {
   final String name;
   final String? meshSize;
   final String category;
+
+  /// 'ton' (pasir mesh) atau 'rit' (bahan baku mentah, dihitung per truk: 1 rit = 1 truk).
+  final String unit;
   final int sortOrder;
   final bool isActive;
   const Product({
@@ -211,6 +235,7 @@ class Product extends DataClass implements Insertable<Product> {
     required this.name,
     this.meshSize,
     required this.category,
+    required this.unit,
     required this.sortOrder,
     required this.isActive,
   });
@@ -224,6 +249,7 @@ class Product extends DataClass implements Insertable<Product> {
       map['mesh_size'] = Variable<String>(meshSize);
     }
     map['category'] = Variable<String>(category);
+    map['unit'] = Variable<String>(unit);
     map['sort_order'] = Variable<int>(sortOrder);
     map['is_active'] = Variable<bool>(isActive);
     return map;
@@ -238,6 +264,7 @@ class Product extends DataClass implements Insertable<Product> {
           ? const Value.absent()
           : Value(meshSize),
       category: Value(category),
+      unit: Value(unit),
       sortOrder: Value(sortOrder),
       isActive: Value(isActive),
     );
@@ -254,6 +281,7 @@ class Product extends DataClass implements Insertable<Product> {
       name: serializer.fromJson<String>(json['name']),
       meshSize: serializer.fromJson<String?>(json['meshSize']),
       category: serializer.fromJson<String>(json['category']),
+      unit: serializer.fromJson<String>(json['unit']),
       sortOrder: serializer.fromJson<int>(json['sortOrder']),
       isActive: serializer.fromJson<bool>(json['isActive']),
     );
@@ -267,6 +295,7 @@ class Product extends DataClass implements Insertable<Product> {
       'name': serializer.toJson<String>(name),
       'meshSize': serializer.toJson<String?>(meshSize),
       'category': serializer.toJson<String>(category),
+      'unit': serializer.toJson<String>(unit),
       'sortOrder': serializer.toJson<int>(sortOrder),
       'isActive': serializer.toJson<bool>(isActive),
     };
@@ -278,6 +307,7 @@ class Product extends DataClass implements Insertable<Product> {
     String? name,
     Value<String?> meshSize = const Value.absent(),
     String? category,
+    String? unit,
     int? sortOrder,
     bool? isActive,
   }) => Product(
@@ -286,6 +316,7 @@ class Product extends DataClass implements Insertable<Product> {
     name: name ?? this.name,
     meshSize: meshSize.present ? meshSize.value : this.meshSize,
     category: category ?? this.category,
+    unit: unit ?? this.unit,
     sortOrder: sortOrder ?? this.sortOrder,
     isActive: isActive ?? this.isActive,
   );
@@ -296,6 +327,7 @@ class Product extends DataClass implements Insertable<Product> {
       name: data.name.present ? data.name.value : this.name,
       meshSize: data.meshSize.present ? data.meshSize.value : this.meshSize,
       category: data.category.present ? data.category.value : this.category,
+      unit: data.unit.present ? data.unit.value : this.unit,
       sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
     );
@@ -309,6 +341,7 @@ class Product extends DataClass implements Insertable<Product> {
           ..write('name: $name, ')
           ..write('meshSize: $meshSize, ')
           ..write('category: $category, ')
+          ..write('unit: $unit, ')
           ..write('sortOrder: $sortOrder, ')
           ..write('isActive: $isActive')
           ..write(')'))
@@ -316,8 +349,16 @@ class Product extends DataClass implements Insertable<Product> {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, code, name, meshSize, category, sortOrder, isActive);
+  int get hashCode => Object.hash(
+    id,
+    code,
+    name,
+    meshSize,
+    category,
+    unit,
+    sortOrder,
+    isActive,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -327,6 +368,7 @@ class Product extends DataClass implements Insertable<Product> {
           other.name == this.name &&
           other.meshSize == this.meshSize &&
           other.category == this.category &&
+          other.unit == this.unit &&
           other.sortOrder == this.sortOrder &&
           other.isActive == this.isActive);
 }
@@ -337,6 +379,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
   final Value<String> name;
   final Value<String?> meshSize;
   final Value<String> category;
+  final Value<String> unit;
   final Value<int> sortOrder;
   final Value<bool> isActive;
   const ProductsCompanion({
@@ -345,6 +388,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     this.name = const Value.absent(),
     this.meshSize = const Value.absent(),
     this.category = const Value.absent(),
+    this.unit = const Value.absent(),
     this.sortOrder = const Value.absent(),
     this.isActive = const Value.absent(),
   });
@@ -354,6 +398,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     required String name,
     this.meshSize = const Value.absent(),
     required String category,
+    this.unit = const Value.absent(),
     this.sortOrder = const Value.absent(),
     this.isActive = const Value.absent(),
   }) : code = Value(code),
@@ -365,6 +410,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     Expression<String>? name,
     Expression<String>? meshSize,
     Expression<String>? category,
+    Expression<String>? unit,
     Expression<int>? sortOrder,
     Expression<bool>? isActive,
   }) {
@@ -374,6 +420,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
       if (name != null) 'name': name,
       if (meshSize != null) 'mesh_size': meshSize,
       if (category != null) 'category': category,
+      if (unit != null) 'unit': unit,
       if (sortOrder != null) 'sort_order': sortOrder,
       if (isActive != null) 'is_active': isActive,
     });
@@ -385,6 +432,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     Value<String>? name,
     Value<String?>? meshSize,
     Value<String>? category,
+    Value<String>? unit,
     Value<int>? sortOrder,
     Value<bool>? isActive,
   }) {
@@ -394,6 +442,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
       name: name ?? this.name,
       meshSize: meshSize ?? this.meshSize,
       category: category ?? this.category,
+      unit: unit ?? this.unit,
       sortOrder: sortOrder ?? this.sortOrder,
       isActive: isActive ?? this.isActive,
     );
@@ -417,6 +466,9 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     if (category.present) {
       map['category'] = Variable<String>(category.value);
     }
+    if (unit.present) {
+      map['unit'] = Variable<String>(unit.value);
+    }
     if (sortOrder.present) {
       map['sort_order'] = Variable<int>(sortOrder.value);
     }
@@ -434,6 +486,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
           ..write('name: $name, ')
           ..write('meshSize: $meshSize, ')
           ..write('category: $category, ')
+          ..write('unit: $unit, ')
           ..write('sortOrder: $sortOrder, ')
           ..write('isActive: $isActive')
           ..write(')'))
@@ -4000,6 +4053,7 @@ typedef $$ProductsTableCreateCompanionBuilder =
       required String name,
       Value<String?> meshSize,
       required String category,
+      Value<String> unit,
       Value<int> sortOrder,
       Value<bool> isActive,
     });
@@ -4010,6 +4064,7 @@ typedef $$ProductsTableUpdateCompanionBuilder =
       Value<String> name,
       Value<String?> meshSize,
       Value<String> category,
+      Value<String> unit,
       Value<int> sortOrder,
       Value<bool> isActive,
     });
@@ -4045,6 +4100,11 @@ class $$ProductsTableFilterComposer
 
   ColumnFilters<String> get category => $composableBuilder(
     column: $table.category,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get unit => $composableBuilder(
+    column: $table.unit,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4093,6 +4153,11 @@ class $$ProductsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get unit => $composableBuilder(
+    column: $table.unit,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get sortOrder => $composableBuilder(
     column: $table.sortOrder,
     builder: (column) => ColumnOrderings(column),
@@ -4127,6 +4192,9 @@ class $$ProductsTableAnnotationComposer
 
   GeneratedColumn<String> get category =>
       $composableBuilder(column: $table.category, builder: (column) => column);
+
+  GeneratedColumn<String> get unit =>
+      $composableBuilder(column: $table.unit, builder: (column) => column);
 
   GeneratedColumn<int> get sortOrder =>
       $composableBuilder(column: $table.sortOrder, builder: (column) => column);
@@ -4168,6 +4236,7 @@ class $$ProductsTableTableManager
                 Value<String> name = const Value.absent(),
                 Value<String?> meshSize = const Value.absent(),
                 Value<String> category = const Value.absent(),
+                Value<String> unit = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
               }) => ProductsCompanion(
@@ -4176,6 +4245,7 @@ class $$ProductsTableTableManager
                 name: name,
                 meshSize: meshSize,
                 category: category,
+                unit: unit,
                 sortOrder: sortOrder,
                 isActive: isActive,
               ),
@@ -4186,6 +4256,7 @@ class $$ProductsTableTableManager
                 required String name,
                 Value<String?> meshSize = const Value.absent(),
                 required String category,
+                Value<String> unit = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
               }) => ProductsCompanion.insert(
@@ -4194,6 +4265,7 @@ class $$ProductsTableTableManager
                 name: name,
                 meshSize: meshSize,
                 category: category,
+                unit: unit,
                 sortOrder: sortOrder,
                 isActive: isActive,
               ),
