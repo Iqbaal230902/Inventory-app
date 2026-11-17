@@ -15,7 +15,7 @@ void callbackDispatcher() {
     try {
       final store = SessionStore();
       if (await store.refreshToken() == null) return true; // belum login
-      db = await openAppDatabase();
+      db = await openAppDatabase(background: true);
       final engine = SyncEngine(
         db: db,
         api: ApiClient(store),

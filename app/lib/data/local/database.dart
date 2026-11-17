@@ -7,6 +7,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:sqlite3/sqlite3.dart' as sql;
 
 part 'database.g.dart';
 
@@ -209,20 +210,55 @@ const _storage = FlutterSecureStorage();
 const _dbKeyName = 'db_cipher_key';
 
 /// Kunci enkripsi database dibuat acak sekali dan disimpan di Keystore.
-Future<String> _dbKey() async {
-  var key = await _storage.read(key: _dbKeyName);
-  if (key == null) {
-    final rnd = Random.secure();
-    key = List.generate(32, (_) => rnd.nextInt(256).toRadixString(16).padLeft(2, '0')).join();
-    await _storage.write(key: _dbKeyName, value: key);
-  }
+Future<String> _newDbKey() async {
+  final rnd = Random.secure();
+  final key = List.generate(32, (_) => rnd.nextInt(256).toRadixString(16).padLeft(2, '0')).join();
+  await _storage.write(key: _dbKeyName, value: key);
   return key;
 }
 
-Future<AppDatabase> openAppDatabase() async {
+/// true bila file database bisa dibuka dengan [key]; false bila SQLCipher menolak
+/// (SQLITE_NOTADB / kode 26 = kunci tidak cocok atau file bukan database).
+bool _canOpenWith(File file, String key) {
+  final db = sql.sqlite3.open(file.path);
+  try {
+    db.execute("PRAGMA key = \"x'$key'\";");
+    db.select('SELECT count(*) FROM sqlite_master;');
+    return true;
+  } on sql.SqliteException catch (e) {
+    if (e.resultCode == 26 || e.extendedResultCode == 26) return false;
+    rethrow;
+  } finally {
+    db.close();
+  }
+}
+
+/// Sisihkan database yang tidak bisa dibuka (tidak dihapus) beserta file pendampingnya.
+Future<void> _setAside(File file) async {
+  final stamp = DateTime.now().millisecondsSinceEpoch;
+  for (final suffix in ['', '-wal', '-shm', '-journal']) {
+    final f = File('${file.path}$suffix');
+    if (await f.exists()) await f.rename('${file.path}$suffix.unreadable-$stamp');
+  }
+}
+
+/// Buka database lokal terenkripsi.
+///
+/// Bila kunci di Keystore hilang/berbeda dari kunci file (mis. aplikasi dipasang ulang
+/// dan Android memulihkan file database dari backup, padahal kunci Keystore tidak ikut
+/// di-backup), file lama tidak mungkin dibaca: file disisihkan lalu dibuat database baru
+/// yang terisi ulang dari server saat sinkron. [background] = isolate WorkManager:
+/// tidak boleh membuat kunci baru / menyisihkan file (hanya aplikasi utama).
+Future<AppDatabase> openAppDatabase({bool background = false}) async {
   final dir = await getApplicationDocumentsDirectory();
   final file = File(p.join(dir.path, 'silika.db.enc'));
-  final key = await _dbKey();
+  var key = await _storage.read(key: _dbKeyName);
+  if (background && key == null) throw StateError('Kunci database belum ada.');
+  if (await file.exists() && (key == null || !_canOpenWith(file, key))) {
+    if (background) throw StateError('Database lokal tidak bisa dibuka dengan kunci saat ini.');
+    await _setAside(file);
+  }
+  key ??= await _newDbKey();
   return AppDatabase(
     NativeDatabase.createInBackground(
       file,

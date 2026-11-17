@@ -7,7 +7,12 @@
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30"/>
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation"/>
+    <!-- Backup Android dimatikan: kunci database (Keystore) tidak ikut di-backup, sehingga
+         file database yang dipulihkan tidak bisa dibuka ("file is not a database"). -->
     <application
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:label="Pasir Silika"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
